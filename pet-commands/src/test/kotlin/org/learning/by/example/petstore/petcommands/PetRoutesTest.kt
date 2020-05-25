@@ -43,15 +43,15 @@ class PetRoutesTest {
         TestCase(
             name = "we should be ok with correct types",
             parameters = TestCase.Parameters(
-                accept = MediaType.APPLICATION_JSON,
-                contentType = MediaType.APPLICATION_JSON
+                accept = MediaType.APPLICATION_JSON_UTF8,
+                contentType = MediaType.APPLICATION_JSON_UTF8
             ),
             expect = TestCase.Expect(status = HttpStatus.OK)
         ),
         TestCase(
             name = "we should not found with invalid accept",
             parameters = TestCase.Parameters(
-                accept = MediaType.APPLICATION_JSON,
+                accept = MediaType.APPLICATION_JSON_UTF8,
                 contentType = MediaType.TEXT_PLAIN
             ),
             expect = TestCase.Expect(status = HttpStatus.NOT_FOUND)
@@ -60,7 +60,7 @@ class PetRoutesTest {
             name = "we should not found with invalid content",
             parameters = TestCase.Parameters(
                 accept = MediaType.TEXT_PLAIN,
-                contentType = MediaType.APPLICATION_JSON
+                contentType = MediaType.APPLICATION_JSON_UTF8
             ),
             expect = TestCase.Expect(status = HttpStatus.NOT_FOUND)
         ),
