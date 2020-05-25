@@ -36,7 +36,6 @@ class PetHandlerTest(@Autowired val petHandler: PetHandler) {
     }
 
     @Test
-    @Suppress("UNCHECKED_CAST")
     fun `we should get the result and headers when adding a pet`() {
         val request = MockServerRequest.builder()
             .method(HttpMethod.POST)
@@ -47,13 +46,22 @@ class PetHandlerTest(@Autowired val petHandler: PetHandler) {
                 assertThat(serverResponse.statusCode()).isEqualTo(HttpStatus.CREATED)
                 assertThat(serverResponse.headers().location.toString()).matches(VALID_PET_URL)
                 assertThat(serverResponse.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON_UTF8)
-
-                with(serverResponse as EntityResponse<Mono<Result>>) {
-                    StepVerifier.create(this.entity())
-                        .consumeNextWith {
-                            assertThat(it.id).matches(VALID_UUID)
-                        }
-                        .verifyComplete()
+                if (serverResponse is EntityResponse<*>) {
+                    val entity = serverResponse.entity()
+                    if (entity is Mono<*>) {
+                        StepVerifier.create(entity)
+                            .consumeNextWith {
+                                if (it is Result) {
+                                    assertThat(it.id).matches(VALID_UUID)
+                                } else {
+                                    throw AssertionError("response is not a result")
+                                }
+                            }.verifyComplete()
+                    } else {
+                        throw AssertionError("response has not a mono")
+                    }
+                } else {
+                    throw AssertionError("response was not an entity")
                 }
             }
             .verifyComplete()
