@@ -1,14 +1,11 @@
 package org.learning.by.example.petstore.petcommands.routes
 
-import org.assertj.core.api.Java6Assertions.assertThat
 import org.junit.jupiter.api.DynamicTest.dynamicTest
-import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -18,14 +15,10 @@ import reactor.core.publisher.toMono
 @ExtendWith(SpringExtension::class)
 @SpringBootTest
 @AutoConfigureWebTestClient
-class PetRoutesTest {
-    @Autowired
-    private lateinit var webClient: WebTestClient
+class PetRoutesTest(@Autowired val webClient: WebTestClient) {
 
     companion object {
         const val PET_URL = "/pet"
-        private const val VALID_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
-        const val VALID_PET_URL = "$PET_URL/$VALID_UUID"
         const val EXAMPLE_PET = """
             {
               "name": "dogie",
@@ -87,36 +80,6 @@ class PetRoutesTest {
                 .exchange()
                 .expectStatus().isEqualTo(it.expect.status)
         }
-    }
-
-    @Test
-    fun `we should get an id when adding a pet`() {
-        webClient.post()
-            .uri(PET_URL)
-            .accept(MediaType.APPLICATION_JSON_UTF8)
-            .contentType(MediaType.APPLICATION_JSON_UTF8)
-            .body(EXAMPLE_PET.toMono(), EXAMPLE_PET.javaClass)
-            .exchange()
-            .expectStatus().isCreated
-            .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8)
-            .expectBody()
-            .jsonPath("$.id").value<String> {
-                assertThat(it).matches(VALID_UUID)
-            }
-    }
-
-    @Test
-    fun `we should get a location header when adding a pet`() {
-        webClient.post()
-            .uri(PET_URL)
-            .accept(MediaType.APPLICATION_JSON_UTF8)
-            .contentType(MediaType.APPLICATION_JSON_UTF8)
-            .body(EXAMPLE_PET.toMono(), EXAMPLE_PET.javaClass)
-            .exchange()
-            .expectStatus().isCreated
-            .expectHeader().contentType(MediaType.APPLICATION_JSON_UTF8)
-            .expectHeader().valueMatches(HttpHeaders.LOCATION, VALID_PET_URL)
-            .expectBody()
     }
 }
 
