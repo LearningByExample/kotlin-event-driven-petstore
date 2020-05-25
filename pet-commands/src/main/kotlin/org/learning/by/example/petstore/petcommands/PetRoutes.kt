@@ -13,7 +13,7 @@ class PetRoutes {
             contentType(APPLICATION_JSON).nest {
                 "/pet".nest {
                     POST("/") {
-                        ok().body(it.bodyToMono(String::class.java), String::class.java)
+                        ok().build()
                     }
                 }
             }
