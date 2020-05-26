@@ -1,21 +1,34 @@
 package org.learning.by.example.petstore.petcommands.routes
 
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.whenever
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.extension.ExtendWith
+import org.learning.by.example.petstore.petcommands.handlers.PetHandler
+import org.learning.by.example.petstore.petcommands.model.Result
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.web.reactive.function.server.ServerResponse
+import org.springframework.web.reactive.function.server.body
 import reactor.core.publisher.toMono
+import java.net.URI
+import java.util.*
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest
 @AutoConfigureWebTestClient
 class PetRoutesTest(@Autowired val webClient: WebTestClient) {
+
+    @MockBean
+    private lateinit var petHandler: PetHandler
 
     companion object {
         const val PET_URL = "/pet"
@@ -29,6 +42,16 @@ class PetRoutesTest(@Autowired val webClient: WebTestClient) {
               ],
             }
         """
+    }
+
+    @BeforeEach
+    fun setup() {
+        val id = UUID.randomUUID()
+
+        val body = ServerResponse.created(URI.create("/pet/${id}"))
+            .contentType(MediaType.APPLICATION_JSON_UTF8)
+            .body(Result(id.toString()).toMono())
+        whenever(petHandler.postPet(any())).thenReturn(body)
     }
 
     data class TestCase(val name: String, val parameters: Parameters, val expect: Expect) {
