@@ -2,12 +2,13 @@ package org.learning.by.example.petstore.petcommands.routes
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.whenever
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest.dynamicTest
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.extension.ExtendWith
 import org.learning.by.example.petstore.petcommands.handlers.PetHandler
-import org.learning.by.example.petstore.petcommands.model.Result
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
@@ -20,7 +21,6 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.body
 import reactor.core.publisher.toMono
 import java.net.URI
-import java.util.*
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest
@@ -42,15 +42,15 @@ class PetRoutesTest(@Autowired val webClient: WebTestClient) {
               ],
             }
         """
+        const val HEADER_LOCATION_VALUE = "/location"
+        const val ANY_BODY_VALUE = "any value is allow"
     }
 
     @BeforeEach
     fun setup() {
-        val id = UUID.randomUUID()
-
-        val body = ServerResponse.created(URI.create("/pet/${id}"))
+        val body = ServerResponse.created(URI.create(HEADER_LOCATION_VALUE))
             .contentType(MediaType.APPLICATION_JSON_UTF8)
-            .body(Result(id.toString()).toMono())
+            .body(ANY_BODY_VALUE.toMono())
         whenever(petHandler.postPet(any())).thenReturn(body)
     }
 
@@ -103,6 +103,21 @@ class PetRoutesTest(@Autowired val webClient: WebTestClient) {
                 .exchange()
                 .expectStatus().isEqualTo(it.expect.status)
         }
+    }
+
+    @Test
+    fun `we should return the handler's response`() {
+        webClient.post()
+            .uri(PET_URL)
+            .accept(MediaType.APPLICATION_JSON_UTF8)
+            .contentType(MediaType.APPLICATION_JSON_UTF8)
+            .body(EXAMPLE_PET.toMono(), EXAMPLE_PET.javaClass)
+            .exchange()
+            .expectStatus().isCreated
+            .expectBody()
+            .consumeWith {
+                assertThat(it.responseBody!!.toString(Charsets.UTF_8)).isEqualTo(ANY_BODY_VALUE)
+            }
     }
 }
 
