@@ -1,8 +1,7 @@
 package org.learning.by.example.petstore.petcommands.routes
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.whenever
-import org.assertj.core.api.Assertions.assertThat
+import com.nhaarman.mockitokotlin2.*
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest.dynamicTest
 import org.junit.jupiter.api.Test
@@ -12,7 +11,7 @@ import org.learning.by.example.petstore.petcommands.handlers.PetHandler
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.context.junit.jupiter.SpringExtension
@@ -20,37 +19,40 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.body
 import reactor.core.publisher.toMono
-import java.net.URI
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest
 @AutoConfigureWebTestClient
 class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
-    @MockBean
+    @SpyBean
     private lateinit var petHandler: PetHandler
 
     companion object {
         const val PET_URL = "/pet"
-        const val EXAMPLE_PET = """
+        const val NOT_FOUND_URL = "/petz"
+        const val EXAMPLE_RESOURCE = """
             {
-              "name": "dogie",
-              "category": "string",
-              "tags": [
-                "string1",
-                "string2",
-              ],
+              "name": "resource",
             }
         """
-        const val HEADER_LOCATION_VALUE = "/location"
-        const val ANY_BODY_VALUE = "any value is allow"
+        const val EXAMPLE_RESPONSE = """
+            {
+                "ok" : true
+            }
+        """
     }
 
     @BeforeEach
     fun setup() {
-        val body = ServerResponse.created(URI.create(HEADER_LOCATION_VALUE))
+        doReturn(ServerResponse.ok()
             .contentType(MediaType.APPLICATION_JSON_UTF8)
-            .body(ANY_BODY_VALUE.toMono())
-        whenever(petHandler.postPet(any())).thenReturn(body)
+            .body(EXAMPLE_RESPONSE.toMono())
+        ).whenever(petHandler).postPet(any())
+    }
+
+    @AfterEach
+    fun tearDown() {
+        reset(petHandler)
     }
 
     data class TestCase(val name: String, val parameters: Parameters, val expect: Expect) {
@@ -59,14 +61,14 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
     }
 
     @TestFactory
-    fun `We should handle correctly accept and content type`() = listOf(
+    fun `We should handle correctly accept and content type when posting a pet`() = listOf(
         TestCase(
             name = "we should be ok with correct types",
             parameters = TestCase.Parameters(
                 accept = MediaType.APPLICATION_JSON_UTF8,
                 contentType = MediaType.APPLICATION_JSON_UTF8
             ),
-            expect = TestCase.Expect(status = HttpStatus.CREATED)
+            expect = TestCase.Expect(status = HttpStatus.OK)
         ),
         TestCase(
             name = "we should not found with invalid accept",
@@ -98,25 +100,37 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
                 .uri(PET_URL)
                 .accept(it.parameters.accept)
                 .contentType(it.parameters.contentType)
-                .body(EXAMPLE_PET.toMono(), EXAMPLE_PET.javaClass)
+                .body(EXAMPLE_RESOURCE.toMono(), EXAMPLE_RESOURCE.javaClass)
                 .exchange()
                 .expectStatus().isEqualTo(it.expect.status)
         }
     }
 
     @Test
-    fun `we should return the handler's response`() {
+    fun `we should invoke the postPet when posting a pet`() {
         webClient.post()
             .uri(PET_URL)
             .accept(MediaType.APPLICATION_JSON_UTF8)
             .contentType(MediaType.APPLICATION_JSON_UTF8)
-            .body(EXAMPLE_PET.toMono(), EXAMPLE_PET.javaClass)
+            .body(EXAMPLE_RESPONSE.toMono(), EXAMPLE_RESPONSE.javaClass)
             .exchange()
-            .expectStatus().isCreated
+            .expectStatus().isOk
             .expectBody()
-            .consumeWith {
-                assertThat(it.responseBody!!.toString(Charsets.UTF_8)).isEqualTo(ANY_BODY_VALUE)
-            }
+            .jsonPath("\$.ok").isEqualTo(true)
+        verify(petHandler).postPet(any())
+        verifyNoMoreInteractions(petHandler)
+    }
+
+    @Test
+    fun `we should not invoke the postPet when invalid url`() {
+        webClient.post()
+            .uri(NOT_FOUND_URL)
+            .accept(MediaType.APPLICATION_JSON_UTF8)
+            .contentType(MediaType.APPLICATION_JSON_UTF8)
+            .body(EXAMPLE_RESPONSE.toMono(), EXAMPLE_RESPONSE.javaClass)
+            .exchange()
+            .expectStatus().isNotFound
+        verifyNoMoreInteractions(petHandler)
     }
 }
 
