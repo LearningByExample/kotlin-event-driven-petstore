@@ -16,7 +16,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest
-class PetHandlerTest(@Autowired val petHandler: PetHandler) {
+class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     companion object {
         private const val PET_URL = "/pet"
         private const val VALID_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"

@@ -25,8 +25,7 @@ import java.net.URI
 @ExtendWith(SpringExtension::class)
 @SpringBootTest
 @AutoConfigureWebTestClient
-class PetRoutesTest(@Autowired val webClient: WebTestClient) {
-
+class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
     @MockBean
     private lateinit var petHandler: PetHandler
 
