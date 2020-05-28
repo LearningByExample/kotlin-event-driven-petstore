@@ -25,11 +25,11 @@ import reactor.core.publisher.toMono
 @AutoConfigureWebTestClient
 class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
     @SpyBean
-    private lateinit var petHandler: PetHandler
+    private lateinit var petHandlerSpy: PetHandler
 
     companion object {
         const val PET_URL = "/pet"
-        const val NOT_FOUND_URL = "/petz"
+        const val NOT_FOUND_URL = "/not-found"
         const val EXAMPLE_RESOURCE = """
             {
               "name": "resource",
@@ -47,12 +47,12 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
         doReturn(ServerResponse.ok()
             .contentType(MediaType.APPLICATION_JSON_UTF8)
             .body(EXAMPLE_RESPONSE.toMono())
-        ).whenever(petHandler).postPet(any())
+        ).whenever(petHandlerSpy).postPet(any())
     }
 
     @AfterEach
     fun tearDown() {
-        reset(petHandler)
+        reset(petHandlerSpy)
     }
 
     data class TestCase(val name: String, val parameters: Parameters, val expect: Expect) {
@@ -107,7 +107,7 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
     }
 
     @Test
-    fun `we should invoke the postPet when posting a pet`() {
+    fun `we should invoke postPet handler when posting a pet`() {
         webClient.post()
             .uri(PET_URL)
             .accept(MediaType.APPLICATION_JSON_UTF8)
@@ -117,12 +117,12 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
             .expectStatus().isOk
             .expectBody()
             .jsonPath("\$.ok").isEqualTo(true)
-        verify(petHandler).postPet(any())
-        verifyNoMoreInteractions(petHandler)
+        verify(petHandlerSpy).postPet(any())
+        verifyNoMoreInteractions(petHandlerSpy)
     }
 
     @Test
-    fun `we should not invoke the postPet when invalid url`() {
+    fun `we should not use the petHandler when an invalid url`() {
         webClient.post()
             .uri(NOT_FOUND_URL)
             .accept(MediaType.APPLICATION_JSON_UTF8)
@@ -130,8 +130,6 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
             .body(EXAMPLE_RESPONSE.toMono(), EXAMPLE_RESPONSE.javaClass)
             .exchange()
             .expectStatus().isNotFound
-        verifyNoMoreInteractions(petHandler)
+        verifyNoMoreInteractions(petHandlerSpy)
     }
 }
-
-
