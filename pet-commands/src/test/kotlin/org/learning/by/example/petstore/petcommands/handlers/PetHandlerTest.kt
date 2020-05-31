@@ -27,19 +27,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         const val VALID_PET_URL = "$PET_URL/$VALID_UUID"
 
         val VALID_PET = Pet("dogie", "dog")
-        val INVALID_PET_WITHOUT_NAME = Pet("", "dog")
-        const val EXAMPLE_PET_WITHOUT_CATEGORY = """
-             {
-              "name": "dogie",
-              "tags": [
-                "string1",
-                "string2",
-              ],
-            }
-        """
-        const val EXAMPLE_BAD_PET = """
-            pet name = dogie
-        """
+        val INVALID_PET_WITHOUT_NAME = Pet(name = "", category = "dog")
     }
 
     @Test
@@ -62,6 +50,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     fun `we should get a bad request when trying to add a pet without name`() {
         val request = MockServerRequest.builder()
             .method(HttpMethod.POST)
+            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .body(INVALID_PET_WITHOUT_NAME.toMono())
 
         petHandler.postPet(request).verify { response, result: ErrorResponse ->
@@ -69,8 +58,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             assertThat(response.headers().location).isNull()
             assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
 
-            assertThat(result.message).isEqualTo("Invalid pet")
-            assertThat(result.description).isEqualTo("Field name is invalid")
+            assertThat(result.message).isEqualTo("invalid pet")
+            assertThat(result.description).isEqualTo("invalid name, size must be between 3 and 64.")
         }
     }
 }
