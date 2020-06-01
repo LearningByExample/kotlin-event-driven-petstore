@@ -31,9 +31,14 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
               "category": "dog"
             }
         """
-        const val INVALID_PET_WITHOUT_NAME = """
+        const val INVALID_PET_WITH_EMPTY_NAME = """
             {
               "name": "",
+              "category": "dog"
+            }
+        """
+        const val INVALID_PET_WITH_NO_NAME = """
+            {
               "category": "dog"
             }
         """
@@ -60,11 +65,11 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     }
 
     @Test
-    fun `we should get a bad request when trying to add a pet without name`() {
+    fun `we should get a bad request when trying to add a pet with empty name`() {
         val httpRequest = MockServerHttpRequest
             .post("/pet")
             .contentType(MediaType.APPLICATION_JSON)
-            .body(INVALID_PET_WITHOUT_NAME)
+            .body(INVALID_PET_WITH_EMPTY_NAME)
         val webExchange = MockServerWebExchange.from(httpRequest)
         val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
 
@@ -73,8 +78,27 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             assertThat(response.headers().location).isNull()
             assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
 
-            assertThat(result.message).isEqualTo("invalid pet")
-            assertThat(result.description).isEqualTo("invalid name, size must be between 3 and 64.")
+            assertThat(result.message).isEqualTo("Invalid pet")
+            assertThat(result.description).isEqualTo("Invalid name, size must be between 3 and 64.")
+        }
+    }
+
+    @Test
+    fun `we should get a bad request when trying to add a pet with no name`() {
+        val httpRequest = MockServerHttpRequest
+            .post("/pet")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(INVALID_PET_WITH_NO_NAME)
+        val webExchange = MockServerWebExchange.from(httpRequest)
+        val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
+
+        petHandler.postPet(request).verify { response, result: ErrorResponse ->
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST)
+            assertThat(response.headers().location).isNull()
+            assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
+
+            assertThat(result.message).isEqualTo("Invalid pet")
+            assertThat(result.description).isEqualTo("Failed to read HTTP message")
         }
     }
 }

@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
+import org.springframework.web.server.ServerWebInputException
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import java.net.URI
@@ -27,12 +28,12 @@ class PetHandler(val validator: Validator) {
             if (validate.isNotEmpty()) {
                 var message = ""
                 validate.forEach(Consumer {
-                    message += "invalid ${it.propertyPath}, ${it.message}. "
+                    message += "Invalid ${it.propertyPath}, ${it.message}. "
                 })
                 message = message.trim()
                 ServerResponse.status(HttpStatus.BAD_REQUEST)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(ErrorResponse("invalid pet", message).toMono())
+                    .body(ErrorResponse("Invalid pet", message).toMono())
             } else {
                 with(Result(UUID.randomUUID().toString())) {
                     ServerResponse.created(URI.create("/pet/${id}"))
@@ -40,7 +41,16 @@ class PetHandler(val validator: Validator) {
                         .body(this.toMono())
                 }
             }
-        }
+        }.onErrorResume {
+            if( it is ServerWebInputException) {
+                ServerResponse.status(HttpStatus.BAD_REQUEST)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(ErrorResponse("Invalid pet", it.reason!!).toMono())
+            }else {
+                ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
+                    .body(ErrorResponse("Server Error", it.localizedMessage!!).toMono())
+            }
 
+        }
     }
 }
