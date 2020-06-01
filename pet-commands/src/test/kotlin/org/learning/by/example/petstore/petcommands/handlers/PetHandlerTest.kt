@@ -15,7 +15,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.mock.web.reactive.function.server.MockServerRequest
 import org.springframework.test.context.junit.jupiter.SpringExtension
-import reactor.core.publisher.toMono
+import reactor.kotlin.core.publisher.toMono
 
 
 @ExtendWith(SpringExtension::class)
