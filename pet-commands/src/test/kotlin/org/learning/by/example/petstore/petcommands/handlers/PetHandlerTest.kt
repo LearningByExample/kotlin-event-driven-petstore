@@ -98,7 +98,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
 
             assertThat(result.message).isEqualTo("Invalid pet")
-            assertThat(result.description).isEqualTo("Failed to read HTTP message")
+            assertThat(result.description).isEqualTo("Invalid name, must not be null.")
         }
     }
 }
