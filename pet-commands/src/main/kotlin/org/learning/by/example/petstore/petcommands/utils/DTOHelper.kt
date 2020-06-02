@@ -1,6 +1,5 @@
 package org.learning.by.example.petstore.petcommands.utils
 
-import org.learning.by.example.petstore.petcommands.exceptions.InvalidParametersException
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import javax.validation.ConstraintViolation
@@ -17,7 +16,7 @@ class DTOHelper(val validator: Validator) {
                     message += "Invalid ${it.propertyPath}, ${it.message}. "
                 }
                 message = message.trim()
-                Mono.error(InvalidParametersException(message))
+                Mono.error(InvalidDtoException(message))
             } else {
                 monoObject
             }

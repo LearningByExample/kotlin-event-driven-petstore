@@ -1,10 +1,10 @@
 package org.learning.by.example.petstore.petcommands.handlers
 
-import org.learning.by.example.petstore.petcommands.exceptions.InvalidParametersException
 import org.learning.by.example.petstore.petcommands.model.ErrorResponse
 import org.learning.by.example.petstore.petcommands.model.Pet
 import org.learning.by.example.petstore.petcommands.model.Result
 import org.learning.by.example.petstore.petcommands.utils.DTOHelper
+import org.learning.by.example.petstore.petcommands.utils.InvalidDtoException
 import org.learning.by.example.petstore.petcommands.utils.ServerConstants.Companion.INVALID_RESOURCE
 import org.learning.by.example.petstore.petcommands.utils.ServerConstants.Companion.SERVER_ERROR
 import org.springframework.http.HttpStatus
@@ -28,12 +28,13 @@ class PetHandler(val dto: DTOHelper) {
             .body(this.toMono())
     }
 
-    private fun toError(throwable: Throwable) = if (throwable is InvalidParametersException) {
+    private fun toError(throwable: Throwable) = if (throwable is InvalidDtoException) {
         ServerResponse.status(HttpStatus.BAD_REQUEST)
             .contentType(MediaType.APPLICATION_JSON)
             .body(ErrorResponse(INVALID_RESOURCE, throwable.message!!).toMono())
     } else {
-        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
+        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .contentType(MediaType.APPLICATION_JSON)
             .body(ErrorResponse(SERVER_ERROR, throwable.localizedMessage!!).toMono())
     }
 
