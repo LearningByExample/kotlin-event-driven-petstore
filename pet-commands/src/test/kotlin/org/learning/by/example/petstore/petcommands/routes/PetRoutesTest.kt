@@ -18,7 +18,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.body
-import reactor.core.publisher.toMono
+import reactor.kotlin.core.publisher.toMono
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest
@@ -45,7 +45,7 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
     @BeforeEach
     fun setup() {
         doReturn(ServerResponse.ok()
-            .contentType(MediaType.APPLICATION_JSON_UTF8)
+            .contentType(MediaType.APPLICATION_JSON)
             .body(EXAMPLE_RESPONSE.toMono())
         ).whenever(petHandlerSpy).postPet(any())
     }
@@ -65,15 +65,15 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
         TestCase(
             name = "we should be ok with correct types",
             parameters = TestCase.Parameters(
-                accept = MediaType.APPLICATION_JSON_UTF8,
-                contentType = MediaType.APPLICATION_JSON_UTF8
+                accept = MediaType.APPLICATION_JSON,
+                contentType = MediaType.APPLICATION_JSON
             ),
             expect = TestCase.Expect(status = HttpStatus.OK)
         ),
         TestCase(
             name = "we should not found with invalid accept",
             parameters = TestCase.Parameters(
-                accept = MediaType.APPLICATION_JSON_UTF8,
+                accept = MediaType.APPLICATION_JSON,
                 contentType = MediaType.TEXT_PLAIN
             ),
             expect = TestCase.Expect(status = HttpStatus.NOT_FOUND)
@@ -82,7 +82,7 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
             name = "we should not found with invalid content",
             parameters = TestCase.Parameters(
                 accept = MediaType.TEXT_PLAIN,
-                contentType = MediaType.APPLICATION_JSON_UTF8
+                contentType = MediaType.APPLICATION_JSON
             ),
             expect = TestCase.Expect(status = HttpStatus.NOT_FOUND)
         ),
@@ -110,8 +110,8 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
     fun `we should invoke postPet handler when posting a pet`() {
         webClient.post()
             .uri(PET_URL)
-            .accept(MediaType.APPLICATION_JSON_UTF8)
-            .contentType(MediaType.APPLICATION_JSON_UTF8)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
             .body(EXAMPLE_RESPONSE.toMono(), EXAMPLE_RESPONSE.javaClass)
             .exchange()
             .expectStatus().isOk
@@ -125,8 +125,8 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
     fun `we should not use the petHandler when an invalid url`() {
         webClient.post()
             .uri(NOT_FOUND_URL)
-            .accept(MediaType.APPLICATION_JSON_UTF8)
-            .contentType(MediaType.APPLICATION_JSON_UTF8)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
             .body(EXAMPLE_RESPONSE.toMono(), EXAMPLE_RESPONSE.javaClass)
             .exchange()
             .expectStatus().isNotFound
