@@ -1,4 +1,4 @@
-package org.learning.by.example.petstore.petcommands.utility
+package org.learning.by.example.petstore.petcommands.utils
 
 import org.learning.by.example.petstore.petcommands.exceptions.InvalidParametersException
 import org.springframework.stereotype.Service
@@ -7,8 +7,7 @@ import javax.validation.ConstraintViolation
 import javax.validation.Validator
 
 @Service
-class Utils(val validator: Validator) {
-
+class DTOHelper(val validator: Validator) {
     fun <Type> validate(monoObject: Mono<Type>): Mono<Type> {
         return monoObject.flatMap { obj ->
             val validate: Set<ConstraintViolation<Type>> = validator.validate(obj)
@@ -24,5 +23,4 @@ class Utils(val validator: Validator) {
             }
         }
     }
-
 }

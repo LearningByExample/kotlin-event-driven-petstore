@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.learning.by.example.petstore.petcommands.model.ErrorResponse
 import org.learning.by.example.petstore.petcommands.model.Result
 import org.learning.by.example.petstore.petcommands.testing.verify
+import org.learning.by.example.petstore.petcommands.utils.ServerConstants.Companion.INVALID_RESOURCE
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.HttpStatus
@@ -78,7 +79,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             assertThat(response.headers().location).isNull()
             assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
 
-            assertThat(result.message).isEqualTo("Invalid pet")
+            assertThat(result.message).isEqualTo(INVALID_RESOURCE)
             assertThat(result.description).isEqualTo("Invalid name, size must be between 3 and 64.")
         }
     }
@@ -97,7 +98,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             assertThat(response.headers().location).isNull()
             assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
 
-            assertThat(result.message).isEqualTo("Invalid pet")
+            assertThat(result.message).isEqualTo(INVALID_RESOURCE)
             assertThat(result.description).isEqualTo("Invalid name, must not be null.")
         }
     }

@@ -4,7 +4,9 @@ import org.learning.by.example.petstore.petcommands.exceptions.InvalidParameters
 import org.learning.by.example.petstore.petcommands.model.ErrorResponse
 import org.learning.by.example.petstore.petcommands.model.Pet
 import org.learning.by.example.petstore.petcommands.model.Result
-import org.learning.by.example.petstore.petcommands.utility.Utils
+import org.learning.by.example.petstore.petcommands.utils.DTOHelper
+import org.learning.by.example.petstore.petcommands.utils.ServerConstants.Companion.INVALID_RESOURCE
+import org.learning.by.example.petstore.petcommands.utils.ServerConstants.Companion.SERVER_ERROR
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
@@ -19,27 +21,28 @@ import java.util.*
 
 
 @Service
-class PetHandler(val utils: Utils) {
+class PetHandler(val dto: DTOHelper) {
+    private fun toResponse(pet: Pet) = with(Result(UUID.randomUUID().toString())) {
+        ServerResponse.created(URI.create("/pet/${id}"))
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(this.toMono())
+    }
+
+    private fun toError(throwable: Throwable) = if (throwable is InvalidParametersException) {
+        ServerResponse.status(HttpStatus.BAD_REQUEST)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(ErrorResponse(INVALID_RESOURCE, throwable.message!!).toMono())
+    } else {
+        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
+            .body(ErrorResponse(SERVER_ERROR, throwable.localizedMessage!!).toMono())
+    }
+
+    private fun validate(monoPet: Mono<Pet>) = dto.validate(monoPet)
+
     fun postPet(serverRequest: ServerRequest): Mono<ServerResponse> {
         return serverRequest.bodyToMono<Pet>()
-            .transform { utils.validate(it) }
-            .flatMap {
-                with(Result(UUID.randomUUID().toString())) {
-                    ServerResponse.created(URI.create("/pet/${id}"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(this.toMono())
-                }
-
-            }.onErrorResume {
-                if( it is InvalidParametersException) {
-                    ServerResponse.status(HttpStatus.BAD_REQUEST)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(ErrorResponse("Invalid pet", it.message!!).toMono())
-                } else {
-                    ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.APPLICATION_JSON)
-                        .body(ErrorResponse("Server Error", it.localizedMessage!!).toMono())
-                }
-
-            }
+            .transform(this::validate)
+            .flatMap(this::toResponse)
+            .onErrorResume(this::toError)
     }
 }
