@@ -40,10 +40,8 @@ class PetHandler(val dto: DTOHelper) {
 
     private fun validate(monoPet: Mono<Pet>) = dto.validate(monoPet)
 
-    fun postPet(serverRequest: ServerRequest): Mono<ServerResponse> {
-        return serverRequest.bodyToMono<Pet>()
-            .transform(this::validate)
-            .flatMap(this::toResponse)
-            .onErrorResume(this::toError)
-    }
+    fun postPet(serverRequest: ServerRequest) = serverRequest.bodyToMono<Pet>()
+        .transform(this::validate)
+        .flatMap(this::toResponse)
+        .onErrorResume(this::toError)
 }
