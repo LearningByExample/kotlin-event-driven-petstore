@@ -38,7 +38,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
 
     data class TestCase(val name: String, val parameters: Parameters, val expect: Expect) {
         data class Parameters(val body: String)
-        data class Expect(val errorDescription: String)
+        data class Expect(val error: String)
     }
 
     @TestFactory
@@ -54,7 +54,35 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                        """
             ),
             expect = TestCase.Expect(
-                errorDescription = "Invalid name, size must be between 3 and 64."
+                error = "Invalid name, size must be between 3 and 20."
+            )
+        ),
+        TestCase(
+            name = "we should get a bad request when trying to add a pet with a long name",
+            parameters = TestCase.Parameters(
+                body = """
+                            {
+                              "name": "supersupersuperfluffy",
+                              "category": "dog"
+                            }
+                       """
+            ),
+            expect = TestCase.Expect(
+                error = "Invalid name, size must be between 3 and 20."
+            )
+        ),
+        TestCase(
+            name = "we should get a bad request when trying to add a pet with a bad name",
+            parameters = TestCase.Parameters(
+                body = """
+                            {
+                              "name": "super fluffy",
+                              "category": "dog"
+                            }
+                       """
+            ),
+            expect = TestCase.Expect(
+                error = "Invalid name, should be alphanumeric."
             )
         ),
         TestCase(
@@ -67,7 +95,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                        """
             ),
             expect = TestCase.Expect(
-                errorDescription = "Invalid name, must not be null."
+                error = "Invalid name, must not be null."
             )
         ),
         TestCase(
@@ -75,13 +103,41 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             parameters = TestCase.Parameters(
                 body = """
                             {
-                              "name": "fluffy",
+                              "name": "fluffy1",
                               "category": ""
                             }
                        """
             ),
             expect = TestCase.Expect(
-                errorDescription = "Invalid category, size must be between 3 and 64."
+                error = "Invalid category, size must be between 3 and 15."
+            )
+        ),
+        TestCase(
+            name = "we should get a bad request when trying to add a pet with a long category",
+            parameters = TestCase.Parameters(
+                body = """
+                            {
+                              "name": "fluffy2",
+                              "category": "mega-mega-mega-mega-dog"
+                            }
+                       """
+            ),
+            expect = TestCase.Expect(
+                error = "Invalid category, size must be between 3 and 15."
+            )
+        ),
+        TestCase(
+            name = "we should get a bad request when trying to add a pet with a bad category",
+            parameters = TestCase.Parameters(
+                body = """
+                            {
+                              "name": "fluffy",
+                              "category": "dog1"
+                            }
+                       """
+            ),
+            expect = TestCase.Expect(
+                error = "Invalid category, should be only alphabetic characters or hyphen."
             )
         ),
         TestCase(
@@ -94,7 +150,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                        """
             ),
             expect = TestCase.Expect(
-                errorDescription = "Invalid category, must not be null."
+                error = "Invalid category, must not be null."
             )
         )
     ).map {
@@ -112,7 +168,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 assertThat(response.headers().location).isNull()
 
                 assertThat(result.message).isEqualTo(INVALID_RESOURCE)
-                assertThat(result.description).isEqualTo(it.expect.errorDescription)
+                assertThat(result.description).isEqualTo(it.expect.error)
             }
         }
     }
