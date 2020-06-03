@@ -34,28 +34,6 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
               "category": "dog"
             }
         """
-        const val INVALID_PET_WITH_EMPTY_NAME = """
-            {
-              "name": "",
-              "category": "dog"
-            }
-        """
-        const val INVALID_PET_WITH_NO_NAME = """
-            {
-              "category": "dog"
-            }
-        """
-        const val INVALID_PET_WITH_EMPTY_CATEGORY = """
-            {
-              "name": "dogie",
-              "category": ""
-            }
-        """
-        const val INVALID_PET_WITH_NO_CATEGORY = """
-            {
-                "name": "dogie"
-            }
-        """
     }
 
     data class TestCase(val name: String, val parameters: Parameters, val expect: Expect) {
@@ -64,20 +42,29 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     }
 
     @TestFactory
-    fun `We should handle bad request when posting a pet with incorrect input`() = listOf(
+    fun `We should get bad request when adding a pet with bad input`() = listOf(
         TestCase(
             name = "we should get a bad request when trying to add a pet with empty name",
             parameters = TestCase.Parameters(
-                body = INVALID_PET_WITH_EMPTY_NAME
+                body = """
+                            {
+                              "name": "",
+                              "category": "dog"
+                            }
+                       """
             ),
             expect = TestCase.Expect(
-                errorDescription ="Invalid name, size must be between 3 and 64."
+                errorDescription = "Invalid name, size must be between 3 and 64."
             )
         ),
         TestCase(
             name = "we should get a bad request when trying to add a pet with no name",
             parameters = TestCase.Parameters(
-                body = INVALID_PET_WITH_NO_NAME
+                body = """
+                            {
+                              "category": "dog"
+                            }
+                       """
             ),
             expect = TestCase.Expect(
                 errorDescription = "Invalid name, must not be null."
@@ -86,16 +73,25 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with empty category",
             parameters = TestCase.Parameters(
-                body = INVALID_PET_WITH_EMPTY_CATEGORY
+                body = """
+                            {
+                              "name": "fluffy",
+                              "category": ""
+                            }
+                       """
             ),
             expect = TestCase.Expect(
-                errorDescription ="Invalid category, size must be between 3 and 64."
+                errorDescription = "Invalid category, size must be between 3 and 64."
             )
         ),
         TestCase(
             name = "we should get a bad request when trying to add a pet with no category",
             parameters = TestCase.Parameters(
-                body = INVALID_PET_WITH_NO_CATEGORY
+                body = """
+                            {
+                              "name": "fluffy"
+                            }
+                       """
             ),
             expect = TestCase.Expect(
                 errorDescription = "Invalid category, must not be null."
