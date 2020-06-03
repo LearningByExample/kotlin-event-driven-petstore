@@ -30,8 +30,13 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
 
         const val VALID_PET = """
             {
-              "name": "dogie",
-              "category": "dog"
+              "name": "fluffy",
+              "category": "dog",
+              "tags" : [
+                "soft",
+                "beauty",
+                "good-boy"
+              ]
             }
         """
     }
@@ -151,6 +156,51 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             ),
             expect = TestCase.Expect(
                 error = "Invalid category, must not be null."
+            )
+        ),
+        TestCase(
+            name = "we should get a bad request when trying to add a pet with a invalid tags",
+            parameters = TestCase.Parameters(
+                body = """
+                            {
+                              "name": "fluffy",
+                              "category" : "dog",
+                              "tags" : [ "do" ]
+                            }
+                       """
+            ),
+            expect = TestCase.Expect(
+                error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
+            )
+        ),
+        TestCase(
+            name = "we should get a bad request when trying to add a pet with a valid & invalid tags",
+            parameters = TestCase.Parameters(
+                body = """
+                            {
+                              "name": "fluffy",
+                              "category" : "dog",
+                              "tags" : [ "beauty", "do" ]
+                            }
+                       """
+            ),
+            expect = TestCase.Expect(
+                error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
+            )
+        ),
+        TestCase(
+            name = "we should get a bad request when trying to add a pet with a empty tag",
+            parameters = TestCase.Parameters(
+                body = """
+                            {
+                              "name": "fluffy",
+                              "category" : "dog",
+                              "tags" : [ "" ]
+                            }
+                       """
+            ),
+            expect = TestCase.Expect(
+                error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
             )
         )
     ).map {
