@@ -118,7 +118,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 body = """
                             {
                               "name": "fluffy2",
-                              "category": "mega-mega-mega-mega-dog"
+                              "category": "megamegamegamegadog"
                             }
                        """
             ),
@@ -137,7 +137,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                        """
             ),
             expect = TestCase.Expect(
-                error = "Invalid category, should be only alphabetic characters or hyphen."
+                error = "Invalid category, should be only alphabetic characters."
             )
         ),
         TestCase(

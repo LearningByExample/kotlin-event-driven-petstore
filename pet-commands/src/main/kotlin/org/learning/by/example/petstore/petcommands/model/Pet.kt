@@ -13,7 +13,7 @@ data class Pet(
 
     @field:Size(min = 3, max = 15)
     @field:NotNull
-    @field:Pattern(regexp = "[a-zAZ\\-]*", message = "should be only alphabetic characters or hyphen")
+    @field:Pattern(regexp = "[a-zAZ]*", message = "should be only alphabetic characters")
     val category: String?,
 
     val tags: List<String>?
