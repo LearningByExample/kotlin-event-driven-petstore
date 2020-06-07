@@ -1,4 +1,5 @@
-package org.learning.by.example.petstore.petcommands.utils
+package org.learning.by.example.petstore.reactor.dtovalidator
+
 
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
@@ -6,7 +7,7 @@ import javax.validation.ConstraintViolation
 import javax.validation.Validator
 
 @Service
-class DTOHelper(val validator: Validator) {
+class DTOValidator(private val validator: Validator) {
     fun <Type> validate(monoObject: Mono<Type>): Mono<Type> {
         return monoObject.flatMap { obj ->
             val validate: Set<ConstraintViolation<Type>> = validator.validate(obj)

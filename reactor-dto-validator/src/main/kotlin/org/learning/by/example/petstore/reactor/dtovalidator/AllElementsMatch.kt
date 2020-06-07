@@ -1,4 +1,4 @@
-package org.learning.by.example.petstore.petcommands.utils
+package org.learning.by.example.petstore.reactor.dtovalidator
 
 import javax.validation.Constraint
 import javax.validation.Payload
@@ -9,8 +9,8 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.RUNTIME)
 @Constraint(validatedBy = [ElementsPatternValidator::class])
 annotation class AllElementsMatch(
-    val message: String = "elements should match the pattern",
-    val groups: Array<KClass<Any>> = [],
-    val payload: Array<KClass<Payload>> = [],
-    val regexp: String = ".*"
+        val message: String = "elements should match the pattern",
+        val groups: Array<KClass<Any>> = [],
+        val payload: Array<KClass<Payload>> = [],
+        val regexp: String = ".*"
 )

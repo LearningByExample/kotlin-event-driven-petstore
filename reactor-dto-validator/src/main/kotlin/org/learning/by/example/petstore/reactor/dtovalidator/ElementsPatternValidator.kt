@@ -1,4 +1,4 @@
-package org.learning.by.example.petstore.petcommands.utils
+package org.learning.by.example.petstore.reactor.dtovalidator
 
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
