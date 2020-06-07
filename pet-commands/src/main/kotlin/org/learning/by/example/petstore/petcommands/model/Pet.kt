@@ -1,6 +1,6 @@
 package org.learning.by.example.petstore.petcommands.model
 
-import org.learning.by.example.petstore.petcommands.utils.AllElementsMatch
+import org.learning.by.example.petstore.reactor.dtovalidator.AllElementsMatch
 import javax.validation.constraints.NotNull
 import javax.validation.constraints.Pattern
 import javax.validation.constraints.Size
