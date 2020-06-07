@@ -3,6 +3,7 @@ package org.learning.by.example.petstore.petcommands.handlers
 import org.learning.by.example.petstore.petcommands.model.ErrorResponse
 import org.learning.by.example.petstore.petcommands.model.Pet
 import org.learning.by.example.petstore.petcommands.model.Result
+import org.learning.by.example.petstore.petcommands.service.PetCommands
 import org.learning.by.example.petstore.reactor.dtovalidator.DTOValidator
 import org.learning.by.example.petstore.reactor.dtovalidator.InvalidDtoException
 import org.springframework.http.HttpStatus
@@ -15,17 +16,19 @@ import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import java.net.URI
-import java.util.*
 
 
 @Service
-class PetHandler(val dto: DTOValidator) {
+class PetHandler(
+    val dto: DTOValidator,
+    val petCommands: PetCommands
+) {
     companion object {
         const val INVALID_RESOURCE = "Invalid Resource"
         const val SERVER_ERROR = "Server Error"
     }
 
-    private fun toResponse(pet: Pet) = with(Result(UUID.randomUUID().toString())) {
+    private fun toResponse(id: String) = with(Result(id)) {
         ServerResponse.created(URI.create("/pet/${id}"))
             .contentType(MediaType.APPLICATION_JSON)
             .body(this.toMono())
@@ -45,6 +48,7 @@ class PetHandler(val dto: DTOValidator) {
 
     fun postPet(serverRequest: ServerRequest) = serverRequest.bodyToMono<Pet>()
         .transform(this::validate)
+        .transform(petCommands::sendPetCreate)
         .flatMap(this::toResponse)
         .onErrorResume(this::toError)
 }
