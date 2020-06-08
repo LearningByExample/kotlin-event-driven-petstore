@@ -1,12 +1,8 @@
 package org.learning.by.example.petstore.petcommands.handlers
 
 import com.nhaarman.mockitokotlin2.*
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.common.serialization.StringDeserializer
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.DynamicTest
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestFactory
+import org.junit.jupiter.api.*
 import org.junit.jupiter.api.extension.ExtendWith
 import org.learning.by.example.petstore.petcommands.handlers.PetHandler.Companion.INVALID_RESOURCE
 import org.learning.by.example.petstore.petcommands.model.ErrorResponse
@@ -15,7 +11,7 @@ import org.learning.by.example.petstore.petcommands.service.PetCommands
 import org.learning.by.example.petstore.petcommands.testing.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.SpyBean
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest
@@ -23,10 +19,7 @@ import org.springframework.mock.web.server.MockServerWebExchange
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.reactive.function.server.HandlerStrategies
 import org.springframework.web.reactive.function.server.ServerRequest
-import reactor.kafka.receiver.KafkaReceiver
-import reactor.kafka.receiver.ReceiverOptions
 import reactor.kotlin.core.publisher.toMono
-import reactor.test.StepVerifier
 import java.util.*
 
 
@@ -34,10 +27,6 @@ import java.util.*
 @SpringBootTest
 class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     companion object {
-        private const val PET_URL = "/pet"
-        private const val VALID_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
-        const val VALID_PET_URL = "$PET_URL/$VALID_UUID"
-
         const val VALID_PET = """
             {
               "name": "fluffy",
@@ -49,16 +38,21 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
               ]
             }
         """
-
-        private const val CLIENT_ID = "pet_commands_consumer"
-        private const val GROUP_ID = "pet_commands_consumers"
-        private const val OFFSET_EARLIEST = "earliest"
-        private const val SERVER_CONFIG = "localhost:9092"
-        private const val TOPIC = "pet_commands"
+        val FAKE_ID = UUID.randomUUID().toString()
     }
 
-    @SpyBean
+    @MockBean
     private lateinit var petCommands: PetCommands
+
+    @BeforeEach
+    fun setup() {
+        doReturn(FAKE_ID.toMono()).whenever(petCommands).sendPetCreate(any())
+    }
+
+    @AfterEach
+    fun tearDown() {
+        reset(petCommands)
+    }
 
     data class TestCase(val name: String, val parameters: Parameters, val expect: Expect) {
         data class Parameters(val body: String)
@@ -253,67 +247,14 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         val webExchange = MockServerWebExchange.from(httpRequest)
         val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
 
-        val uuid = UUID.randomUUID()
-        doReturn(uuid.toString().toMono()).whenever(petCommands).sendPetCreate(any())
-
         petHandler.postPet(request).verify { response, result: Result ->
             assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED)
-            assertThat(response.headers().location.toString()).matches(VALID_PET_URL)
+            assertThat(response.headers().location.toString()).isEqualTo("/pet/$FAKE_ID")
             assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
 
-            assertThat(result.id).matches(VALID_UUID)
-            assertThat(result.id).isEqualTo(uuid.toString())
-
+            assertThat(result.id).isEqualTo(FAKE_ID)
             verify(petCommands).sendPetCreate(any())
             verifyNoMoreInteractions(petCommands)
         }
     }
-
-    @Test
-    fun `when we post a pet we should send a command`() {
-        var id = ""
-
-        val httpRequest = MockServerHttpRequest
-            .post("/pet")
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(VALID_PET)
-        val webExchange = MockServerWebExchange.from(httpRequest)
-        val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
-
-        petHandler.postPet(request).verify { response, result: Result ->
-            assertThat(response.statusCode()).isEqualTo(HttpStatus.CREATED)
-            assertThat(response.headers().location.toString()).matches(VALID_PET_URL)
-            assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
-
-            id = result.id
-            assertThat(id).matches(VALID_UUID)
-
-            StepVerifier.create(getStrings())
-                .expectSubscription()
-                .thenRequest(Long.MAX_VALUE)
-                .expectNext(id)
-                .expectNextCount(0L)
-                .thenCancel()
-                .verify()
-        }
-
-    }
-
-    private fun getStrings() = getKafkaReceiver().receive().map {
-        val receiverOffset = it.receiverOffset()
-        receiverOffset.acknowledge()
-        it.value()
-    }
-
-    private fun getKafkaReceiver(): KafkaReceiver<String, String> {
-        val props: MutableMap<String, Any> = HashMap()
-        props[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = SERVER_CONFIG
-        props[ConsumerConfig.CLIENT_ID_CONFIG] = CLIENT_ID
-        props[ConsumerConfig.GROUP_ID_CONFIG] = GROUP_ID
-        props[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
-        props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
-        props[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = OFFSET_EARLIEST
-        return KafkaReceiver.create(ReceiverOptions.create<String, String>(props).subscription(setOf(TOPIC)))
-    }
-
 }
