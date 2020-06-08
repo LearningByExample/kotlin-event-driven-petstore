@@ -34,11 +34,9 @@ class PetCommandsImpl : PetCommands {
         producer = KafkaSender.create(SenderOptions.create(props))
     }
 
-    override fun sendPetCreate(monoPet: Mono<Pet>): Mono<String> {
-        return monoPet.flatMap {
-            val id = UUID.randomUUID().toString()
-            producer.send(Flux.just(SenderRecord.create(ProducerRecord(TOPIC, id, id), id)))
-                .single().map { id }
-        }
+    override fun sendPetCreate(pet: Pet): Mono<String> {
+        val id = UUID.randomUUID().toString()
+        return producer.send(Flux.just(SenderRecord.create(ProducerRecord(TOPIC, id, id), id)))
+            .single().map { id }
     }
 }

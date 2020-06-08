@@ -48,7 +48,7 @@ class PetHandler(
 
     fun postPet(serverRequest: ServerRequest) = serverRequest.bodyToMono<Pet>()
         .transform(this::validate)
-        .transform(petCommands::sendPetCreate)
+        .flatMap(petCommands::sendPetCreate)
         .flatMap(this::toResponse)
         .onErrorResume(this::toError)
 }
