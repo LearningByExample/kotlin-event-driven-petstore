@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import reactor.kafka.receiver.KafkaReceiver
 import reactor.kafka.receiver.ReceiverOptions
+import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
-import java.util.*
 
 @SpringBootTest
 class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl) {
@@ -45,20 +45,18 @@ class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl) {
             .verify()
     }
 
-    private fun getStrings() = getKafkaReceiver().receive().map {
+    private fun getStrings() = getKafkaReceiver().receive().flatMap {
         val receiverOffset = it.receiverOffset()
         receiverOffset.acknowledge()
-        it.value()
+        it.value().toMono()
     }
 
-    private fun getKafkaReceiver(): KafkaReceiver<String, String> {
-        val props: MutableMap<String, Any> = HashMap()
-        props[ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG] = SERVER_CONFIG
-        props[ConsumerConfig.CLIENT_ID_CONFIG] = CLIENT_ID
-        props[ConsumerConfig.GROUP_ID_CONFIG] = GROUP_ID
-        props[ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
-        props[ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG] = StringDeserializer::class.java
-        props[ConsumerConfig.AUTO_OFFSET_RESET_CONFIG] = OFFSET_EARLIEST
-        return KafkaReceiver.create(ReceiverOptions.create<String, String>(props).subscription(setOf(TOPIC)))
-    }
+    private fun getKafkaReceiver() = KafkaReceiver.create(ReceiverOptions.create<String, String>(hashMapOf<String, Any>(
+        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to SERVER_CONFIG,
+        ConsumerConfig.CLIENT_ID_CONFIG to CLIENT_ID,
+        ConsumerConfig.GROUP_ID_CONFIG to GROUP_ID,
+        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
+        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to OFFSET_EARLIEST
+    )).subscription(setOf(TOPIC)))
 }

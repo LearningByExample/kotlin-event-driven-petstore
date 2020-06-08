@@ -13,7 +13,6 @@ import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
-import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import java.net.URI
 
@@ -44,10 +43,10 @@ class PetHandler(
             .body(ErrorResponse(SERVER_ERROR, throwable.localizedMessage!!).toMono())
     }
 
-    private fun validate(monoPet: Mono<Pet>) = dto.validate(monoPet)
+    private fun validate(pet: Pet) = dto.validate(pet)
 
     fun postPet(serverRequest: ServerRequest) = serverRequest.bodyToMono<Pet>()
-        .transform(this::validate)
+        .flatMap(this::validate)
         .flatMap(petCommands::sendPetCreate)
         .flatMap(this::toResponse)
         .onErrorResume(this::toError)

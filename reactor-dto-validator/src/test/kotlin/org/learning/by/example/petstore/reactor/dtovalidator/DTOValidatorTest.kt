@@ -1,7 +1,6 @@
 package org.learning.by.example.petstore.reactor.dtovalidator
 
 import org.junit.jupiter.api.Test
-import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
 import javax.validation.Validation
 import javax.validation.Validator
@@ -19,45 +18,45 @@ internal class DTOValidatorTest {
     }
 
     data class ObjectToValidate(
-            @field:Min(5)
-            val field: Int,
-            @field:NotNull
-            val otherField: String?
+        @field:Min(5)
+        val field: Int,
+        @field:NotNull
+        val otherField: String?
     )
 
     @Test
-    fun `validate an object should return a mono error with two messages` () {
+    fun `validate an object should return a mono error with two messages`() {
         val dtoValidator = DTOValidator(validator)
-        val validate = dtoValidator.validate(ObjectToValidate(4, null).toMono())
+        val validate = dtoValidator.validate(ObjectToValidate(4, null))
 
         StepVerifier.create(validate)
-                .expectErrorMatches {
-                    (it is InvalidDtoException) && (it.message!!.matches(Regex((TWO_ERRORS))))
-                }
-                .verify()
+            .expectErrorMatches {
+                (it is InvalidDtoException) && (it.message!!.matches(Regex((TWO_ERRORS))))
+            }
+            .verify()
     }
 
     @Test
-    fun `validate an object should return a mono error with one message` () {
+    fun `validate an object should return a mono error with one message`() {
         val dtoValidator = DTOValidator(validator)
-        val validate = dtoValidator.validate(ObjectToValidate(4, "hello").toMono())
+        val validate = dtoValidator.validate(ObjectToValidate(4, "hello"))
 
         StepVerifier.create(validate)
-                .expectErrorMatches {
-                    (it is InvalidDtoException) && (it.message!!.matches(Regex((ONE_ERROR))))
-                }
-                .verify()
+            .expectErrorMatches {
+                (it is InvalidDtoException) && (it.message!!.matches(Regex((ONE_ERROR))))
+            }
+            .verify()
     }
 
     @Test
-    fun `validate an object should return the input object` () {
+    fun `validate an object should return the input object`() {
         val dtoValidator = DTOValidator(validator)
         val objectToValidate = ObjectToValidate(45, "other value ")
-        val validate = dtoValidator.validate(objectToValidate.toMono())
+        val validate = dtoValidator.validate(objectToValidate)
 
         StepVerifier.create(validate)
-                .expectNextMatches(objectToValidate::equals)
-                .expectComplete()
-                .verify()
+            .expectNextMatches(objectToValidate::equals)
+            .expectComplete()
+            .verify()
     }
 }
