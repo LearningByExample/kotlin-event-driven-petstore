@@ -3,6 +3,7 @@ package org.learning.by.example.petstore.petcommands.service
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
+import org.learning.by.example.petstore.petcommands.configuration.KafkaConfig
 import org.learning.by.example.petstore.petcommands.model.Pet
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -14,27 +15,17 @@ import reactor.kotlin.core.publisher.toMono
 import java.util.*
 
 @Service
-class PetCommandsImpl : PetCommands {
-    companion object {
-        private const val PRODUCER_ID = "pet_commands_producer"
-        private const val SERVER_CONFIG = "localhost:9092"
-        private const val TOPIC = "pet_commands"
-        private const val ALL_ACK = "all"
-    }
+class PetCommandsImpl(private val kafkaConfig: KafkaConfig) : PetCommands {
 
-    private final val producer: KafkaSender<String, String>
+    private final val producer: KafkaSender<String, String> = KafkaSender.create(SenderOptions.create(hashMapOf<String, Any>(
+        ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaConfig.serverUri,
+        ProducerConfig.CLIENT_ID_CONFIG to kafkaConfig.producerId,
+        ProducerConfig.ACKS_CONFIG to kafkaConfig.ack,
+        ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
+        ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java
+    )))
 
-    init {
-        producer = KafkaSender.create(SenderOptions.create(hashMapOf<String, Any>(
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to SERVER_CONFIG,
-            ProducerConfig.CLIENT_ID_CONFIG to PRODUCER_ID,
-            ProducerConfig.ACKS_CONFIG to ALL_ACK,
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java
-        )))
-    }
-
-    private fun send(id: String) = producer.send(Flux.just(SenderRecord.create(ProducerRecord(TOPIC, id, id), id)))
+    private fun send(id: String) = producer.send(Flux.just(SenderRecord.create(ProducerRecord(kafkaConfig.topic, id, id), id)))
         .single().flatMap { id.toMono() }
 
     override fun sendPetCreate(pet: Pet): Mono<String> = send(UUID.randomUUID().toString())
