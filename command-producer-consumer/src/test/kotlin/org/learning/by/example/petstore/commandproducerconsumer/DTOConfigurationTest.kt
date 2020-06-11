@@ -7,6 +7,6 @@ import org.springframework.boot.test.context.SpringBootTest
 @SpringBootTest
 class DTOConfigurationTest(@Autowired petCommandsProducerConfig: PetCommandsProducerConfig) {
     @Test
-    fun `test dtoValidator injection`() {
+    fun `test petCommandsProducerConfig injection`() {
     }
 }
