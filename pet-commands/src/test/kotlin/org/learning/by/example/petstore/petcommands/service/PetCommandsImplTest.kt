@@ -4,7 +4,6 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.learning.by.example.petstore.petcommands.configuration.KafkaConfig
 import org.learning.by.example.petstore.petcommands.model.Pet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -22,21 +21,21 @@ import reactor.test.StepVerifier
 @SpringBootTest
 @Testcontainers
 class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl,
-                          @Autowired val kafkaConfig: KafkaConfig) {
+                          @Autowired val petCommandsProducerConfig: PetCommandsProducerConfig) {
     companion object {
         private const val CLIENT_ID = "pet_commands_consumer"
         private const val GROUP_ID = "pet_commands_consumers"
         private const val OFFSET_EARLIEST = "earliest"
         private const val VALID_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
-        private const val KAFKA_SERVER_URI_PROPERTY = "kafka.properties.server-uri"
+        private const val BOOTSTRAP_SERVERS_PROPERTY = "${PetCommandsProducerConfig.CONFIG_PREFIX}.bootstrap-server"
 
         @Container
-        private val KAFKA_CONTAINER: KafkaContainer = KafkaContainer()
+        private val KAFKA_CONTAINER = KafkaContainer()
 
         @JvmStatic
         @DynamicPropertySource
-        private fun KafkaProperties(registry: DynamicPropertyRegistry) {
-            registry.add(KAFKA_SERVER_URI_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
+        private fun testProperties(registry: DynamicPropertyRegistry) {
+            registry.add(BOOTSTRAP_SERVERS_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
         }
     }
 
@@ -69,11 +68,11 @@ class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl,
     }
 
     private fun getKafkaReceiver() = KafkaReceiver.create(ReceiverOptions.create<String, String>(hashMapOf<String, Any>(
-        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to kafkaConfig.serverUri,
+        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to petCommandsProducerConfig.bootstrapServer,
         ConsumerConfig.CLIENT_ID_CONFIG to CLIENT_ID,
         ConsumerConfig.GROUP_ID_CONFIG to GROUP_ID,
         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
         ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
         ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to OFFSET_EARLIEST
-    )).subscription(setOf(kafkaConfig.topic)))
+    )).subscription(setOf(petCommandsProducerConfig.topic)))
 }

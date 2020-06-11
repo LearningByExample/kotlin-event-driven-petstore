@@ -1,13 +1,18 @@
-package org.learning.by.example.petstore.petcommands.configuration
+package org.learning.by.example.petstore.petcommands.service
 
+import org.learning.by.example.petstore.petcommands.service.PetCommandsProducerConfig.Constants.CONFIG_PREFIX
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 
 @ConstructorBinding
-@ConfigurationProperties(prefix = "kafka.properties")
-data class KafkaConfig(
-    val serverUri: String,
+@ConfigurationProperties(CONFIG_PREFIX)
+data class PetCommandsProducerConfig(
+    val bootstrapServer: String,
     val topic: String,
-    val producerId: String,
+    val clientId: String,
     val ack: String
-)
+) {
+    companion object Constants {
+        const val CONFIG_PREFIX = "service.pet-commands.producer"
+    }
+}
