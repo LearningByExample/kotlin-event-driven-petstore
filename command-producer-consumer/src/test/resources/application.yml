@@ -1,0 +1,7 @@
+service:
+    pet-commands:
+        producer:
+            bootstrap-server: localhost:9092
+            topic: pet-commands
+            client-id: pet_commands_producer
+            ack: all
