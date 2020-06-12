@@ -18,8 +18,8 @@ import reactor.test.StepVerifier
 
 @SpringBootTest
 @Testcontainers
-class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl,
-                          @Autowired val petCommandsProducerConfig: PetCommandsProducerConfig) {
+internal class PetCommandsProducerImplTest(@Autowired val petCommandsImpl: PetCommandsProducerImpl,
+                                  @Autowired val petCommandsProducerConfig: PetCommandsProducerConfig) {
     companion object {
         private const val CLIENT_ID = "pet_commands_consumer"
         private const val GROUP_ID = "pet_commands_consumers"
@@ -41,7 +41,7 @@ class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl,
     fun `we should send commands`() {
         var id = ""
         StepVerifier
-            .create(petCommandsImpl.sendPetCreate("fluffy"))
+            .create(petCommandsImpl.sendCommand("fluffy"))
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
             .consumeNextWith {

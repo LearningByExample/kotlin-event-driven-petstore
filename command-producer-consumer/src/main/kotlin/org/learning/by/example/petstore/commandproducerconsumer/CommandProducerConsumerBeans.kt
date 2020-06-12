@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 @ConfigurationPropertiesScan
-class DTOConfiguration(private val petCommandsProducerConfig: PetCommandsProducerConfig) {
+class CommandProducerConsumerBeans(private val petCommandsProducerConfig: PetCommandsProducerConfig) {
     @Bean
-    fun petCommands(): PetCommands = PetCommandsImpl(petCommandsProducerConfig)
+    fun petCommandsProducer(): PetCommandsProducer = PetCommandsProducerImpl(petCommandsProducerConfig)
 }

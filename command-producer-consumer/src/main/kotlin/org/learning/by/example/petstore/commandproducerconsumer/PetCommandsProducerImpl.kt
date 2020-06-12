@@ -3,7 +3,6 @@ package org.learning.by.example.petstore.commandproducerconsumer
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
-import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import reactor.kafka.sender.KafkaSender
 import reactor.kafka.sender.SenderOptions
@@ -11,9 +10,8 @@ import reactor.kafka.sender.SenderRecord
 import reactor.kotlin.core.publisher.toMono
 import java.util.*
 
-@Service
-class PetCommandsImpl(private val petCommandsProducerConfig: PetCommandsProducerConfig) : PetCommands {
-    private final val producer: KafkaSender<String, String> = KafkaSender.create(SenderOptions.create(
+internal class PetCommandsProducerImpl(private val petCommandsProducerConfig: PetCommandsProducerConfig) : PetCommandsProducer {
+    private val sender: KafkaSender<String, String> = KafkaSender.create(SenderOptions.create(
         hashMapOf<String, Any>(
             ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to petCommandsProducerConfig.bootstrapServer,
             ProducerConfig.CLIENT_ID_CONFIG to petCommandsProducerConfig.clientId,
@@ -23,9 +21,9 @@ class PetCommandsImpl(private val petCommandsProducerConfig: PetCommandsProducer
         )
     ))
 
-    private fun send(id: String) = producer.send(
+    private fun send(id: String) = sender.send(
         SenderRecord.create(ProducerRecord(petCommandsProducerConfig.topic, id, id), id).toMono()
     ).single().flatMap { id.toMono() }
 
-    override fun sendPetCreate(pojo: Any): Mono<String> = send(UUID.randomUUID().toString())
+    override fun sendCommand(command: Any): Mono<String> = send(UUID.randomUUID().toString())
 }

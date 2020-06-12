@@ -5,8 +5,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
-class DTOConfigurationTest(@Autowired petCommandsProducerConfig: PetCommandsProducerConfig) {
+class CommandProducerConsumerBeansTest(@Autowired petCommandsProducer: PetCommandsProducer) {
     @Test
-    fun `test petCommandsProducerConfig injection`() {
+    fun `test PetCommandsProducer injection`() {
     }
 }
