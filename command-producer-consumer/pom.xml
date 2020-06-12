@@ -12,7 +12,7 @@
 	<artifactId>commands-consumer-producer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>commands-consumer-producer</name>
-	<description>Library used to consume and produce messages in a kafka queue</description>
+	<description>Library for consuming and producing commands via kafka</description>
 
 	<properties>
 		<java.version>11</java.version>
