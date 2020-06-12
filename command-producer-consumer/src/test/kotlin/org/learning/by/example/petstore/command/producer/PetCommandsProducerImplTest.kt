@@ -40,8 +40,7 @@ internal class PetCommandsProducerImplTest(@Autowired val petCommandsImpl: PetCo
     @Test
     fun `we should send commands`() {
         var id = ""
-        StepVerifier
-            .create(petCommandsImpl.sendCommand("fluffy"))
+        StepVerifier.create(petCommandsImpl.sendCommand("fluffy"))
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
             .consumeNextWith {
