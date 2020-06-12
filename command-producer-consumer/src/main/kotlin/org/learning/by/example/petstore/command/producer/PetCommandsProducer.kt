@@ -1,4 +1,4 @@
-package org.learning.by.example.petstore.commandproducerconsumer
+package org.learning.by.example.petstore.command.producer
 
 import reactor.core.publisher.Mono
 

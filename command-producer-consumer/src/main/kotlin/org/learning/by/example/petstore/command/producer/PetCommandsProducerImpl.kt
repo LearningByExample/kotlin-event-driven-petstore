@@ -1,4 +1,4 @@
-package org.learning.by.example.petstore.commandproducerconsumer
+package org.learning.by.example.petstore.command.producer
 
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.clients.producer.ProducerRecord

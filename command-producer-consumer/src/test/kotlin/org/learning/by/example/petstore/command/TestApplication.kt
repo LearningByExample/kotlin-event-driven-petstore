@@ -1,4 +1,4 @@
-package org.learning.by.example.petstore.commandproducerconsumer
+package org.learning.by.example.petstore.command
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 

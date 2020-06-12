@@ -1,6 +1,6 @@
-package org.learning.by.example.petstore.commandproducerconsumer
+package org.learning.by.example.petstore.command.producer
 
-import org.learning.by.example.petstore.commandproducerconsumer.PetCommandsProducerConfig.Constants.CONFIG_PREFIX
+import org.learning.by.example.petstore.command.producer.PetCommandsProducerConfig.Constants.CONFIG_PREFIX
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 

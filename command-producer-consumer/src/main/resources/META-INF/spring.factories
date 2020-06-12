@@ -1,1 +1,1 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=org.learning.by.example.petstore.commandproducerconsumer.CommandProducerConsumerBeans
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=org.learning.by.example.petstore.command.CommandProducerConsumerBeans

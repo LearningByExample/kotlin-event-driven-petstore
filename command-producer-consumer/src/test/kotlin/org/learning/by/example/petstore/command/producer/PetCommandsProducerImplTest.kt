@@ -1,4 +1,4 @@
-package org.learning.by.example.petstore.commandproducerconsumer
+package org.learning.by.example.petstore.command.producer
 
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
@@ -19,7 +19,7 @@ import reactor.test.StepVerifier
 @SpringBootTest
 @Testcontainers
 internal class PetCommandsProducerImplTest(@Autowired val petCommandsImpl: PetCommandsProducerImpl,
-                                  @Autowired val petCommandsProducerConfig: PetCommandsProducerConfig) {
+                                           @Autowired val petCommandsProducerConfig: PetCommandsProducerConfig) {
     companion object {
         private const val CLIENT_ID = "pet_commands_consumer"
         private const val GROUP_ID = "pet_commands_consumers"
