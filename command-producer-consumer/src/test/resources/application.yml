@@ -5,3 +5,5 @@ service:
             topic: pet-commands
             client-id: pet_commands_producer
             ack: all
+        consumer:
+            bootstrap-server: localhost:9092

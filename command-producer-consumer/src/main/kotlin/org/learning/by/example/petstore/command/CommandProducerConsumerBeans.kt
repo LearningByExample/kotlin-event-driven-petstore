@@ -1,5 +1,7 @@
 package org.learning.by.example.petstore.command
 
+import org.learning.by.example.petstore.command.consumer.PetCommandsConsumer
+import org.learning.by.example.petstore.command.consumer.PetCommandsConsumerImpl
 import org.learning.by.example.petstore.command.producer.PetCommandsProducer
 import org.learning.by.example.petstore.command.producer.PetCommandsProducerConfig
 import org.learning.by.example.petstore.command.producer.PetCommandsProducerImpl
@@ -12,4 +14,6 @@ import org.springframework.context.annotation.Configuration
 class CommandProducerConsumerBeans(private val petCommandsProducerConfig: PetCommandsProducerConfig) {
     @Bean
     fun petCommandsProducer(): PetCommandsProducer = PetCommandsProducerImpl(petCommandsProducerConfig)
+    @Bean
+    fun petCommandsConsumer(): PetCommandsConsumer = PetCommandsConsumerImpl()
 }
