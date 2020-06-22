@@ -31,7 +31,6 @@ internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImp
         private val KAFKA_CONTAINER = KafkaContainer()
             .withClasspathResourceMapping(SCRIPT_PATH, CONTAINER_PATH, BindMode.READ_ONLY)
 
-
         @JvmStatic
         @DynamicPropertySource
         private fun testProperties(registry: DynamicPropertyRegistry) {
