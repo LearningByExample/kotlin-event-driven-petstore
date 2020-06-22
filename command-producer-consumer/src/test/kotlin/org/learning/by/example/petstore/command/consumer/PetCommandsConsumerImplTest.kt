@@ -15,7 +15,6 @@ import java.time.Duration
 @SpringBootTest
 @Testcontainers
 internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImpl: PetCommandsConsumerImpl) {
-
     companion object {
         private const val SCRIPT_PATH = "scripts"
         private const val SCRIPT_MESSAGES_PATH = "messages"
@@ -30,7 +29,6 @@ internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImp
         @Container
         private val KAFKA_CONTAINER = KafkaContainer()
             .withClasspathResourceMapping(SCRIPT_PATH, CONTAINER_PATH, BindMode.READ_ONLY)
-
 
         @JvmStatic
         @DynamicPropertySource
