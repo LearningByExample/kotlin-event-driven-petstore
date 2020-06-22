@@ -18,19 +18,18 @@ internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImp
 
     companion object {
         private const val SCRIPT_PATH = "scripts"
+        private const val SCRIPT_MESSAGES_PATH = "messages"
         private const val SCRIPT_SEND_MESSAGE = "send_messages.sh"
-        private const val SCRIPT_MESSAGE_PATH = "messages"
-        private const val TWO_MESSAGES_FILE = "two_messages.txt"
-        private const val CONTAINER_PATH = "/usr/messages"
-        private const val ORIGIN_MESSAGE_COMMAND = "$SCRIPT_PATH/$SCRIPT_SEND_MESSAGE"
+        private const val CONTAINER_PATH = "/usr/helpers"
         private const val CONTAINER_MESSAGE_COMMAND = "$CONTAINER_PATH/$SCRIPT_SEND_MESSAGE"
-        private const val ORIGIN_MESSAGE_TWO_MESSAGE = "$SCRIPT_PATH/$SCRIPT_MESSAGE_PATH/$TWO_MESSAGES_FILE"
-        private const val CONTAINER_MESSAGE_TWO_MESSAGE = "$CONTAINER_PATH/$TWO_MESSAGES_FILE"
+        private const val CONTAINER_MESSAGES_PATH = "$CONTAINER_PATH/$SCRIPT_MESSAGES_PATH"
+
+        private const val TWO_MESSAGES_FILE = "two_messages.txt"
+        private const val CONTAINER_MESSAGE_TWO_MESSAGE = "$CONTAINER_MESSAGES_PATH/$TWO_MESSAGES_FILE"
 
         @Container
         private val KAFKA_CONTAINER = KafkaContainer()
-            .withClasspathResourceMapping(ORIGIN_MESSAGE_COMMAND, CONTAINER_MESSAGE_COMMAND, BindMode.READ_ONLY)
-            .withClasspathResourceMapping(ORIGIN_MESSAGE_TWO_MESSAGE, CONTAINER_MESSAGE_TWO_MESSAGE, BindMode.READ_ONLY)
+            .withClasspathResourceMapping(SCRIPT_PATH, CONTAINER_PATH, BindMode.READ_ONLY)
 
 
         @JvmStatic
