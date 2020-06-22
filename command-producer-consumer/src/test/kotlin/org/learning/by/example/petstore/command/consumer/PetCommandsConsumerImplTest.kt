@@ -1,7 +1,6 @@
 package org.learning.by.example.petstore.command.consumer
 
 import org.junit.jupiter.api.Test
-
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -42,7 +41,7 @@ internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImp
     }
 
     @Test
-    fun receiveCommands() {
+    fun `we should receive commands`() {
         KAFKA_CONTAINER.execInContainer(CONTAINER_MESSAGE_COMMAND, CONTAINER_MESSAGE_TWO_MESSAGE)
 
         StepVerifier.create(petCommandsConsumerImpl.receiveCommands())
