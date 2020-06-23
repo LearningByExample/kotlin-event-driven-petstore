@@ -12,8 +12,10 @@ import org.springframework.context.annotation.Configuration
 
 @Configuration
 @ConfigurationPropertiesScan
-class CommandProducerConsumerBeans(private val petCommandsProducerConfig: PetCommandsProducerConfig,
-                                   private val petCommandsConsumerConfig: PetCommandsConsumerConfig) {
+class CommandProducerConsumerBeans(
+    private val petCommandsProducerConfig: PetCommandsProducerConfig,
+    private val petCommandsConsumerConfig: PetCommandsConsumerConfig
+) {
     @Bean
     fun petCommandsProducer(): PetCommandsProducer = PetCommandsProducerImpl(petCommandsProducerConfig)
 

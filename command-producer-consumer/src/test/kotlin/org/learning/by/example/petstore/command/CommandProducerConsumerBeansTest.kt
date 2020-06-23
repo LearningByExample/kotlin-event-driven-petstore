@@ -7,8 +7,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
-class CommandProducerConsumerBeansTest(@Autowired petCommandsProducer: PetCommandsProducer,
-                                       @Autowired petCommandsConsumer: PetCommandsConsumer) {
+class CommandProducerConsumerBeansTest(
+    @Autowired petCommandsProducer: PetCommandsProducer,
+    @Autowired petCommandsConsumer: PetCommandsConsumer
+) {
+
     @Test
     fun `test PetCommandsProducer injection`() {
     }

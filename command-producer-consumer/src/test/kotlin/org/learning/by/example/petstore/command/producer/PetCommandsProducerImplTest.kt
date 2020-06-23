@@ -22,8 +22,10 @@ import java.util.*
 
 @SpringBootTest
 @Testcontainers
-internal class PetCommandsProducerImplTest(@Autowired val petCommandsImpl: PetCommandsProducerImpl,
-                                           @Autowired val petCommandsProducerConfig: PetCommandsProducerConfig) {
+internal class PetCommandsProducerImplTest(
+    @Autowired val petCommandsImpl: PetCommandsProducerImpl,
+    @Autowired val petCommandsProducerConfig: PetCommandsProducerConfig
+) {
     companion object {
         private const val CLIENT_ID = "pet_commands_consumer"
         private const val GROUP_ID = "pet_commands_consumers"
@@ -68,12 +70,16 @@ internal class PetCommandsProducerImplTest(@Autowired val petCommandsImpl: PetCo
         it.value().toMono()
     }
 
-    private fun getKafkaReceiver() = KafkaReceiver.create(ReceiverOptions.create<String, Command>(hashMapOf<String, Any>(
-        ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to petCommandsProducerConfig.bootstrapServer,
-        ConsumerConfig.CLIENT_ID_CONFIG to CLIENT_ID,
-        ConsumerConfig.GROUP_ID_CONFIG to GROUP_ID,
-        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
-        ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to OFFSET_EARLIEST
-    )).subscription(setOf(petCommandsProducerConfig.topic)))
+    private fun getKafkaReceiver() = KafkaReceiver.create(
+        ReceiverOptions.create<String, Command>(
+            hashMapOf<String, Any>(
+                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to petCommandsProducerConfig.bootstrapServer,
+                ConsumerConfig.CLIENT_ID_CONFIG to CLIENT_ID,
+                ConsumerConfig.GROUP_ID_CONFIG to GROUP_ID,
+                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
+                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
+                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to OFFSET_EARLIEST
+            )
+        ).subscription(setOf(petCommandsProducerConfig.topic))
+    )
 }
