@@ -5,7 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
-class DTOConfigurationTest(@Autowired dtoValidator: DTOValidator) {
+class DTOConfigurationTest(@Suppress("UNUSED_PARAMETER") @Autowired dtoValidator: DTOValidator) {
     @Test
     fun `test dtoValidator injection`() {
     }

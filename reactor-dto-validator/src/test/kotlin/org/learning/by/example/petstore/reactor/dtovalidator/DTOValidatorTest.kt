@@ -14,7 +14,7 @@ internal class DTOValidatorTest {
         private val validator: Validator = factory.validator
 
         private const val ONE_ERROR = "Invalid .*, .*\\."
-        private const val TWO_ERRORS = "$ONE_ERROR $ONE_ERROR";
+        private const val TWO_ERRORS = "$ONE_ERROR $ONE_ERROR"
     }
 
     data class ObjectToValidate(

@@ -1,11 +1,10 @@
 package org.learning.by.example.petstore.reactor.dtovalidator
 
-
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.toMono
 import javax.validation.ConstraintViolation
 import javax.validation.Validator
-import reactor.kotlin.core.publisher.toMono
 
 @Service
 class DTOValidator(private val validator: Validator) {

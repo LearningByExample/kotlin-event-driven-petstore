@@ -3,7 +3,6 @@ package org.learning.by.example.petstore.reactor.dtovalidator
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
-
 class ElementsPatternValidator : ConstraintValidator<AllElementsMatch, Iterable<Any>> {
     private var matcher = Regex(".*")
     override fun initialize(constraintAnnotation: AllElementsMatch?) {
