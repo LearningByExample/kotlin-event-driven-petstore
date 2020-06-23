@@ -16,7 +16,6 @@ import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.kotlin.core.publisher.toMono
 import java.net.URI
 
-
 @Service
 class PetHandler(
     val dto: DTOValidator,
@@ -28,7 +27,7 @@ class PetHandler(
     }
 
     private fun toResponse(id: String) = with(Result(id)) {
-        ServerResponse.created(URI.create("/pet/${id}"))
+        ServerResponse.created(URI.create("/pet/$id"))
             .contentType(MediaType.APPLICATION_JSON)
             .body(this.toMono())
     }

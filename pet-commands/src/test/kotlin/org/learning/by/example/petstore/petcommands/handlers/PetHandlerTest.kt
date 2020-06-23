@@ -1,8 +1,17 @@
 package org.learning.by.example.petstore.petcommands.handlers
 
-import com.nhaarman.mockitokotlin2.*
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.reset
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.extension.ExtendWith
 import org.learning.by.example.petstore.petcommands.handlers.PetHandler.Companion.INVALID_RESOURCE
 import org.learning.by.example.petstore.petcommands.model.ErrorResponse
@@ -20,14 +29,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.reactive.function.server.HandlerStrategies
 import org.springframework.web.reactive.function.server.ServerRequest
 import reactor.kotlin.core.publisher.toMono
-import java.util.*
-
+import java.util.UUID
 
 @ExtendWith(SpringExtension::class)
 @SpringBootTest
 class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     companion object {
-        const val VALID_PET = """
+        const val VALID_PET =
+            """
             {
               "name": "fluffy",
               "category": "dog",
@@ -64,7 +73,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with empty name",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "",
                               "category": "dog"
@@ -78,7 +88,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with a long name",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "supersupersuperfluffy",
                               "category": "dog"
@@ -92,7 +103,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with a bad name",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "super fluffy",
                               "category": "dog"
@@ -106,7 +118,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with no name",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "category": "dog"
                             }
@@ -119,7 +132,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with empty category",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "fluffy1",
                               "category": ""
@@ -133,7 +147,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with a long category",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "fluffy2",
                               "category": "megamegamegamegadog"
@@ -147,7 +162,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with a bad category",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "fluffy",
                               "category": "dog1"
@@ -161,7 +177,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with no category",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "fluffy"
                             }
@@ -174,7 +191,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with a invalid tags",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "fluffy",
                               "category" : "dog",
@@ -189,7 +207,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with a valid & invalid tags",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "fluffy",
                               "category" : "dog",
@@ -204,7 +223,8 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         TestCase(
             name = "we should get a bad request when trying to add a pet with a empty tag",
             parameters = TestCase.Parameters(
-                body = """
+                body =
+                    """
                             {
                               "name": "fluffy",
                               "category" : "dog",

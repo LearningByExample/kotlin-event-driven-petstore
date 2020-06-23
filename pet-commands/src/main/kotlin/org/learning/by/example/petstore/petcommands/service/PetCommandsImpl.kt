@@ -10,19 +10,21 @@ import reactor.kafka.sender.KafkaSender
 import reactor.kafka.sender.SenderOptions
 import reactor.kafka.sender.SenderRecord
 import reactor.kotlin.core.publisher.toMono
-import java.util.*
+import java.util.UUID
 
 @Service
 class PetCommandsImpl(private val petCommandsProducerConfig: PetCommandsProducerConfig) : PetCommands {
-    private final val producer: KafkaSender<String, String> = KafkaSender.create(SenderOptions.create(
-        hashMapOf<String, Any>(
-            ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to petCommandsProducerConfig.bootstrapServer,
-            ProducerConfig.CLIENT_ID_CONFIG to petCommandsProducerConfig.clientId,
-            ProducerConfig.ACKS_CONFIG to petCommandsProducerConfig.ack,
-            ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
-            ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java
+    private final val producer: KafkaSender<String, String> = KafkaSender.create(
+        SenderOptions.create(
+            hashMapOf<String, Any>(
+                ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to petCommandsProducerConfig.bootstrapServer,
+                ProducerConfig.CLIENT_ID_CONFIG to petCommandsProducerConfig.clientId,
+                ProducerConfig.ACKS_CONFIG to petCommandsProducerConfig.ack,
+                ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
+                ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java
+            )
         )
-    ))
+    )
 
     private fun send(id: String) = producer.send(
         SenderRecord.create(ProducerRecord(petCommandsProducerConfig.topic, id, id), id).toMono()

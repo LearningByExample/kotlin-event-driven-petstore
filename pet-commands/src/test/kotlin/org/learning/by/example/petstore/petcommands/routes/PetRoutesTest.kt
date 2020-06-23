@@ -1,6 +1,11 @@
 package org.learning.by.example.petstore.petcommands.routes
 
-import com.nhaarman.mockitokotlin2.*
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.reset
+import com.nhaarman.mockitokotlin2.verify
+import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
+import com.nhaarman.mockitokotlin2.whenever
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest.dynamicTest
@@ -30,12 +35,14 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
     companion object {
         const val PET_URL = "/pet"
         const val NOT_FOUND_URL = "/not-found"
-        const val EXAMPLE_RESOURCE = """
+        const val EXAMPLE_RESOURCE =
+            """
             {
               "name": "resource",
             }
         """
-        const val EXAMPLE_RESPONSE = """
+        const val EXAMPLE_RESPONSE =
+            """
             {
                 "ok" : true
             }
@@ -44,9 +51,10 @@ class PetRoutesTest(@Autowired private val webClient: WebTestClient) {
 
     @BeforeEach
     fun setup() {
-        doReturn(ServerResponse.ok()
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(EXAMPLE_RESPONSE.toMono())
+        doReturn(
+            ServerResponse.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(EXAMPLE_RESPONSE.toMono())
         ).whenever(petHandlerSpy).postPet(any())
     }
 
