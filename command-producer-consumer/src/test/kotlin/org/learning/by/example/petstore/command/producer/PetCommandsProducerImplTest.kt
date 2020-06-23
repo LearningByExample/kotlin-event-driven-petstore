@@ -4,6 +4,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
+import org.learning.by.example.petstore.command.Command
+import org.learning.by.example.petstore.command.utils.JsonDeserializer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -15,6 +17,8 @@ import reactor.kafka.receiver.KafkaReceiver
 import reactor.kafka.receiver.ReceiverOptions
 import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
+import java.sql.Timestamp
+import java.util.*
 
 @SpringBootTest
 @Testcontainers
@@ -39,20 +43,20 @@ internal class PetCommandsProducerImplTest(@Autowired val petCommandsImpl: PetCo
 
     @Test
     fun `we should send commands`() {
-        var id = ""
-        StepVerifier.create(petCommandsImpl.sendCommand("fluffy"))
+        val commandToSend = Command(UUID.randomUUID(), Timestamp(System.currentTimeMillis()), "eventName", mapOf())
+
+        StepVerifier.create(petCommandsImpl.sendCommand(commandToSend))
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
             .consumeNextWith {
-                id = it
-                Assertions.assertThat(id).matches(VALID_UUID)
+                Assertions.assertThat(it).isEqualTo(commandToSend.id)
             }
             .verifyComplete()
 
         StepVerifier.create(getStrings())
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
-            .expectNext(id)
+            .expectNext(commandToSend)
             .expectNextCount(0L)
             .thenCancel()
             .verify()
@@ -64,12 +68,12 @@ internal class PetCommandsProducerImplTest(@Autowired val petCommandsImpl: PetCo
         it.value().toMono()
     }
 
-    private fun getKafkaReceiver() = KafkaReceiver.create(ReceiverOptions.create<String, String>(hashMapOf<String, Any>(
+    private fun getKafkaReceiver() = KafkaReceiver.create(ReceiverOptions.create<String, Command>(hashMapOf<String, Any>(
         ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to petCommandsProducerConfig.bootstrapServer,
         ConsumerConfig.CLIENT_ID_CONFIG to CLIENT_ID,
         ConsumerConfig.GROUP_ID_CONFIG to GROUP_ID,
         ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to JsonDeserializer::class.java,
         ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to OFFSET_EARLIEST
     )).subscription(setOf(petCommandsProducerConfig.topic)))
 }

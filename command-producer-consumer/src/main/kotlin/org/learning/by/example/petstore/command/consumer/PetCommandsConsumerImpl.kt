@@ -5,7 +5,7 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import reactor.kafka.receiver.KafkaReceiver
 import reactor.kafka.receiver.ReceiverOptions
 import reactor.kotlin.core.publisher.toMono
-
+//TODO instead of sending String, send commands
 class PetCommandsConsumerImpl(private val petCommandsConsumerConfig: PetCommandsConsumerConfig) : PetCommandsConsumer {
     override fun receiveCommands() = getKafkaReceiver().receive().flatMap {
         val receiverOffset = it.receiverOffset()
