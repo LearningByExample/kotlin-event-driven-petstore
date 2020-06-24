@@ -18,7 +18,7 @@ import reactor.kafka.receiver.ReceiverOptions
 import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
 import java.sql.Timestamp
-import java.util.*
+import java.util.UUID
 
 @SpringBootTest
 @Testcontainers

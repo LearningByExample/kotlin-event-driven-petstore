@@ -8,8 +8,8 @@ import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
 class CommandProducerConsumerBeansTest(
-    @Autowired petCommandsProducer: PetCommandsProducer,
-    @Autowired petCommandsConsumer: PetCommandsConsumer
+    @Suppress("UNUSED_PARAMETER") @Autowired petCommandsProducer: PetCommandsProducer,
+    @Suppress("UNUSED_PARAMETER") @Autowired petCommandsConsumer: PetCommandsConsumer
 ) {
 
     @Test

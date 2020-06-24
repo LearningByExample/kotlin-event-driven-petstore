@@ -10,9 +10,10 @@ import reactor.kafka.sender.KafkaSender
 import reactor.kafka.sender.SenderOptions
 import reactor.kafka.sender.SenderRecord
 import reactor.kotlin.core.publisher.toMono
-import java.util.*
+import java.util.UUID
 
-internal class PetCommandsProducerImpl(private val petCommandsProducerConfig: PetCommandsProducerConfig) : PetCommandsProducer {
+internal class PetCommandsProducerImpl(private val petCommandsProducerConfig: PetCommandsProducerConfig) :
+    PetCommandsProducer {
     private val sender: KafkaSender<String, Command> = KafkaSender.create(
         SenderOptions.create(
             hashMapOf<String, Any>(
@@ -26,7 +27,9 @@ internal class PetCommandsProducerImpl(private val petCommandsProducerConfig: Pe
     )
 
     private fun send(command: Command) = sender.send(
-        SenderRecord.create(ProducerRecord(petCommandsProducerConfig.topic, command.id.toString(), command), command.id).toMono()
+        SenderRecord.create(
+            ProducerRecord(petCommandsProducerConfig.topic, command.id.toString(), command), command.id
+        ).toMono()
     ).single().flatMap { command.id.toMono() }
 
     override fun sendCommand(command: Command): Mono<UUID> = send(command)

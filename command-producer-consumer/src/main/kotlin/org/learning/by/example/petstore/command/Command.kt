@@ -1,7 +1,7 @@
 package org.learning.by.example.petstore.command
 
 import java.sql.Timestamp
-import java.util.*
+import java.util.UUID
 
 data class Command(
     val id: UUID,
