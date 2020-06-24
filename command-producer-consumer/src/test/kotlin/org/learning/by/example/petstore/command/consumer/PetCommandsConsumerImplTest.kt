@@ -1,5 +1,7 @@
 package org.learning.by.example.petstore.command.consumer
 
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -26,9 +28,18 @@ internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImp
         private const val TWO_MESSAGES_FILE = "two_messages.txt"
         private const val CONTAINER_MESSAGE_TWO_MESSAGE = "$CONTAINER_MESSAGES_PATH/$TWO_MESSAGES_FILE"
 
+        private val CHMOD_SCRIPT_CMD = arrayOf("chmod", "+xX", CONTAINER_MESSAGE_COMMAND)
+        private val CREATE_TWO_MESSAGES_CMD = arrayOf(CONTAINER_MESSAGE_COMMAND, CONTAINER_MESSAGE_TWO_MESSAGE)
+
         @Container
         private val KAFKA_CONTAINER = KafkaContainer()
             .withClasspathResourceMapping(SCRIPT_PATH, CONTAINER_PATH, BindMode.READ_ONLY)
+
+        @JvmStatic
+        @BeforeAll
+        fun setup() {
+            assertThat(KAFKA_CONTAINER.execInContainer(*CHMOD_SCRIPT_CMD).exitCode).isEqualTo(0)
+        }
 
         @JvmStatic
         @DynamicPropertySource
@@ -39,7 +50,7 @@ internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImp
 
     @Test
     fun `we should receive commands`() {
-        KAFKA_CONTAINER.execInContainer(CONTAINER_MESSAGE_COMMAND, CONTAINER_MESSAGE_TWO_MESSAGE)
+        assertThat(KAFKA_CONTAINER.execInContainer(*CREATE_TWO_MESSAGES_CMD).exitCode).isEqualTo(0)
 
         StepVerifier.create(petCommandsConsumerImpl.receiveCommands())
             .expectSubscription()
