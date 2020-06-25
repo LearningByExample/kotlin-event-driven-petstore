@@ -44,7 +44,12 @@ internal class CommandsProducerImplTest(
 
     @Test
     fun `we should send commands`() {
-        val commandToSend = Command("example command", mapOf("attribute" to "value1"))
+        val commandToSend = Command.create("example command") {
+            +("attribute1" to "value1")
+            +("attribute2" to 123)
+            +("attribute3" to false)
+            +("attribute4" to 125.5)
+        }
 
         StepVerifier.create(commandsProducerImpl.sendCommand(commandToSend))
             .expectSubscription()
@@ -62,7 +67,10 @@ internal class CommandsProducerImplTest(
                 assertThat(Instant.parse(JsonPath.read(it, "\$.timestamp")))
                     .isEqualTo(commandToSend.timestamp)
                 assertThat(JsonPath.read<String>(it, "\$.commandName")).isEqualTo("example command")
-                assertThat(JsonPath.read<String>(it, "\$.payload.attribute")).isEqualTo("value1")
+                assertThat(JsonPath.read<String>(it, "\$.payload.attribute1")).isEqualTo("value1")
+                assertThat(JsonPath.read<Int>(it, "\$.payload.attribute2")).isEqualTo(123)
+                assertThat(JsonPath.read<Boolean>(it, "\$.payload.attribute3")).isEqualTo(false)
+                assertThat(JsonPath.read<Double>(it, "\$.payload.attribute4")).isEqualTo(125.5)
             }
             .expectNextCount(0L)
             .thenCancel()
