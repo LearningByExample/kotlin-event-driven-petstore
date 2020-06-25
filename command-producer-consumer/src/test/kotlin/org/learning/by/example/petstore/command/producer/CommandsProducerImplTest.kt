@@ -19,7 +19,6 @@ import reactor.kafka.receiver.ReceiverOptions
 import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
 import java.time.Instant
-import java.util.UUID
 
 @SpringBootTest
 @Testcontainers
@@ -45,7 +44,7 @@ internal class CommandsProducerImplTest(
 
     @Test
     fun `we should send commands`() {
-        val commandToSend = Command(UUID.randomUUID(), Instant.now(), "eventName", mapOf())
+        val commandToSend = Command("example command", mapOf("attribute" to "value1"))
 
         StepVerifier.create(commandsProducerImpl.sendCommand(commandToSend))
             .expectSubscription()
@@ -60,9 +59,10 @@ internal class CommandsProducerImplTest(
             .thenRequest(Long.MAX_VALUE)
             .consumeNextWith {
                 assertThat(JsonPath.read<String>(it, "\$.id")).isEqualTo(commandToSend.id.toString())
-                assertThat(JsonPath.read<String>(it, "\$.commandName")).isEqualTo(commandToSend.commandName)
                 assertThat(Instant.parse(JsonPath.read(it, "\$.timestamp")))
                     .isEqualTo(commandToSend.timestamp)
+                assertThat(JsonPath.read<String>(it, "\$.commandName")).isEqualTo("example command")
+                assertThat(JsonPath.read<String>(it, "\$.payload.attribute")).isEqualTo("value1")
             }
             .expectNextCount(0L)
             .thenCancel()
