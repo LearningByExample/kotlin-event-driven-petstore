@@ -16,12 +16,15 @@ data class Command(val commandName: String) {
         payload[this.first] = this.second
     }
 
-    inline fun <reified T : Any> getOrElse(name: String, elseValue: T): T =
-        with(payload.getOrDefault(name, elseValue)) {
-            if (this is T) {
+    inline fun <reified T : Any> get(attribute: String): T = if (payload.containsKey(attribute)) {
+        with(payload[attribute]!!) {
+            return if (this is T) {
                 this
             } else {
-                elseValue
+                throw ClassCastException("attribute '$attribute' is not of class '${T::class}' is '${this::class}'")
             }
         }
+    } else {
+        throw IndexOutOfBoundsException("attribute '$attribute' not found")
+    }
 }
