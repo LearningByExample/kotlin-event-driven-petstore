@@ -44,7 +44,7 @@ internal class CommandsProducerImplTest(
 
     @Test
     fun `we should send commands`() {
-        val commandToSend = Command.create("example command") {
+        val commandToSend = Command("example command") {
             +("attribute1" to "value1")
             +("attribute2" to 123)
             +("attribute3" to false)

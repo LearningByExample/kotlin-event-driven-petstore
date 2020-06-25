@@ -4,12 +4,8 @@ import java.time.Instant
 import java.util.UUID
 
 data class Command(val commandName: String) {
-    companion object {
-        fun create(commandName: String, init: Command.() -> Unit): Command {
-            val command = Command(commandName)
-            command.apply(init)
-            return command
-        }
+    constructor(commandName: String, init: Command.() -> Unit) : this(commandName) {
+        apply(init)
     }
 
     val id: UUID = UUID.randomUUID()
