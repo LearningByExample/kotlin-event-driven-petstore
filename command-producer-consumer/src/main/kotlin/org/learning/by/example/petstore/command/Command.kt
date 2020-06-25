@@ -6,6 +6,6 @@ import java.util.UUID
 data class Command(
     val id: UUID,
     val timestamp: Instant,
-    val eventName: String,
+    val commandName: String,
     val payload: Map<String, String>
 )

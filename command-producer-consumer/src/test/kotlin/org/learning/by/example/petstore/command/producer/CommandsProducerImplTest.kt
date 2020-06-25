@@ -60,9 +60,9 @@ internal class CommandsProducerImplTest(
             .thenRequest(Long.MAX_VALUE)
             .consumeNextWith {
                 assertThat(JsonPath.read<String>(it, "\$.id")).isEqualTo(commandToSend.id.toString())
-                assertThat(JsonPath.read<String>(it, "\$.eventName")).isEqualTo(commandToSend.eventName)
-                val timeStamp = Instant.parse(JsonPath.read<String>(it, "\$.timestamp"))
-                assertThat(timeStamp).isEqualTo(commandToSend.timestamp)
+                assertThat(JsonPath.read<String>(it, "\$.commandName")).isEqualTo(commandToSend.commandName)
+                assertThat(Instant.parse(JsonPath.read(it, "\$.timestamp")))
+                    .isEqualTo(commandToSend.timestamp)
             }
             .expectNextCount(0L)
             .thenCancel()
