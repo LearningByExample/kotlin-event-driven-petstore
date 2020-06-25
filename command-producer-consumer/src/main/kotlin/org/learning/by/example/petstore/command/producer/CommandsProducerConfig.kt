@@ -1,19 +1,18 @@
-package org.learning.by.example.petstore.command.consumer
+package org.learning.by.example.petstore.command.producer
 
-import org.learning.by.example.petstore.command.consumer.PetCommandsConsumerConfig.Constants.CONFIG_PREFIX
+import org.learning.by.example.petstore.command.producer.CommandsProducerConfig.Constants.CONFIG_PREFIX
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 
 @ConstructorBinding
 @ConfigurationProperties(CONFIG_PREFIX)
-data class PetCommandsConsumerConfig(
+data class CommandsProducerConfig(
     val bootstrapServer: String,
     val topic: String,
     val clientId: String,
-    val groupId: String,
-    val offsetEarliest: String
+    val ack: String
 ) {
     companion object Constants {
-        const val CONFIG_PREFIX = "service.pet-commands.consumer"
+        const val CONFIG_PREFIX = "service.commands.producer"
     }
 }

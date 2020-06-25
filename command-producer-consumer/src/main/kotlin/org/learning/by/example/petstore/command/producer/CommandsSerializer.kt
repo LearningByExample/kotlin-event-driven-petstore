@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.apache.kafka.common.serialization.Serializer
 import org.learning.by.example.petstore.command.Command
 
-class JsonSerializer : Serializer<Command> {
+class CommandsSerializer : Serializer<Command> {
     companion object {
         const val OBJECT_MAPPER_CONFIG_KEY = "org.learning.by.example.petstore.command.objectMapper"
     }

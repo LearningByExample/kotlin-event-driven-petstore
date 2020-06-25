@@ -16,7 +16,7 @@ import java.time.Duration
 
 @SpringBootTest
 @Testcontainers
-internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImpl: PetCommandsConsumerImpl) {
+internal class CommandsConsumerImplTest(@Autowired val commandsConsumerImpl: CommandsConsumerImpl) {
     companion object {
         private const val SCRIPT_PATH = "scripts"
         private const val SCRIPT_MESSAGES_PATH = "messages"
@@ -44,7 +44,7 @@ internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImp
         @JvmStatic
         @DynamicPropertySource
         private fun testProperties(registry: DynamicPropertyRegistry) {
-            registry.add("service.pet-commands.consumer.bootstrap-server", KAFKA_CONTAINER::getBootstrapServers)
+            registry.add("service.commands.consumer.bootstrap-server", KAFKA_CONTAINER::getBootstrapServers)
         }
     }
 
@@ -52,7 +52,7 @@ internal class PetCommandsConsumerImplTest(@Autowired val petCommandsConsumerImp
     fun `we should receive commands`() {
         assertThat(KAFKA_CONTAINER.execInContainer(*CREATE_TWO_MESSAGES_CMD).exitCode).isEqualTo(0)
 
-        StepVerifier.create(petCommandsConsumerImpl.receiveCommands())
+        StepVerifier.create(commandsConsumerImpl.receiveCommands())
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
             .expectNext("one")
