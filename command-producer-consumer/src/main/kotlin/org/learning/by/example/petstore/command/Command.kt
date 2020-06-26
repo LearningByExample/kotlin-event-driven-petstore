@@ -21,10 +21,12 @@ data class Command(val commandName: String) {
             return if (this is T) {
                 this
             } else {
-                throw ClassCastException("attribute '$attribute' is not of class '${T::class}' is '${this::class}'")
+                throw ClassCastException("attribute '$attribute' is not of ${T::class} is ${this::class}")
             }
         }
     } else {
-        throw IndexOutOfBoundsException("attribute '$attribute' not found")
+        throw NoSuchElementException("attribute '$attribute' not found")
     }
+
+    fun contains(attribute: String) = payload.containsKey(attribute)
 }
