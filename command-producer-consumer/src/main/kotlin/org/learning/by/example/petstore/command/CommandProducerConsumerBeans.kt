@@ -22,5 +22,5 @@ class CommandProducerConsumerBeans(
     fun commandsProducer(): CommandsProducer = CommandsProducerImpl(commandsProducerConfig, objectMapper)
 
     @Bean
-    fun commandsConsumer(): CommandsConsumer = CommandsConsumerImpl(commandsConsumerConfig)
+    fun commandsConsumer(): CommandsConsumer = CommandsConsumerImpl(commandsConsumerConfig, objectMapper)
 }

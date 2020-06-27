@@ -1,7 +1,9 @@
 package org.learning.by.example.petstore.command.consumer
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.command.test.CustomKafkaContainer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -31,17 +33,44 @@ internal class CommandsConsumerImplTest(
         }
     }
 
+    @Autowired
+    lateinit var objectMapper: ObjectMapper
+
     @Test
     fun `we should receive commands`() {
         assertThat(KAFKA_CONTAINER.createTopic(commandsConsumerConfig.topic)).isTrue()
-        assertThat(KAFKA_CONTAINER.sendMessage(commandsConsumerConfig.topic, "one")).isTrue()
-        assertThat(KAFKA_CONTAINER.sendMessage(commandsConsumerConfig.topic, "two")).isTrue()
+
+        val commandOne = command("example command 1") {
+            "attribute1" value "value1"
+            "attribute2" value 123
+            "attribute3" value false
+            "attribute4" value 125.5
+        }
+        val commandTwo = command("example command 2") {
+            "attribute1" value "value1"
+            "attribute2" value 123
+            "attribute3" value false
+            "attribute4" value 125.5
+        }
+
+        assertThat(
+            KAFKA_CONTAINER.sendMessage(
+                commandsConsumerConfig.topic,
+                objectMapper.writeValueAsString(commandOne)
+            )
+        ).isTrue()
+        assertThat(
+            KAFKA_CONTAINER.sendMessage(
+                commandsConsumerConfig.topic,
+                objectMapper.writeValueAsString(commandTwo)
+            )
+        ).isTrue()
 
         StepVerifier.create(commandsConsumerImpl.receiveCommands())
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
-            .expectNext("one")
-            .expectNext("two")
+            .expectNext(commandOne)
+            .expectNext(commandTwo)
             .expectNextCount(0L)
             .thenCancel()
             .verify(Duration.ofSeconds(5L))
