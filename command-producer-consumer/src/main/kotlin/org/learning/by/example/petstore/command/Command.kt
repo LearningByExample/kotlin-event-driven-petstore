@@ -3,18 +3,9 @@ package org.learning.by.example.petstore.command
 import java.time.Instant
 import java.util.UUID
 
-data class Command(val commandName: String) {
-    constructor(commandName: String, init: Command.() -> Unit) : this(commandName) {
-        apply(init)
-    }
-
+data class Command(val commandName: String, val payload: HashMap<String, Any>) {
     val id: UUID = UUID.randomUUID()
     val timestamp: Instant = Instant.now()
-    val payload: HashMap<String, Any> = hashMapOf()
-
-    operator fun Pair<String, Any>.unaryPlus() {
-        payload[this.first] = this.second
-    }
 
     inline fun <reified T : Any> get(attribute: String): T = if (payload.containsKey(attribute)) {
         with(payload[attribute]!!) {

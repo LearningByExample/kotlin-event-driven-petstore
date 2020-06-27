@@ -6,7 +6,7 @@ import org.apache.kafka.common.serialization.StringDeserializer
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.learning.by.example.petstore.command.Command
+import org.learning.by.example.petstore.command.dsl.command
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -44,11 +44,11 @@ internal class CommandsProducerImplTest(
 
     @Test
     fun `we should send commands`() {
-        val commandToSend = Command("example command") {
-            +("attribute1" to "value1")
-            +("attribute2" to 123)
-            +("attribute3" to false)
-            +("attribute4" to 125.5)
+        val commandToSend = command("example command") {
+            "attribute1" value "value1"
+            "attribute2" value 123
+            "attribute3" value false
+            "attribute4" value 125.5
         }
 
         StepVerifier.create(commandsProducerImpl.sendCommand(commandToSend))
