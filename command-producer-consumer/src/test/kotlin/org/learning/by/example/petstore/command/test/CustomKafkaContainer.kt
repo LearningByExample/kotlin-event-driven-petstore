@@ -1,0 +1,32 @@
+package org.learning.by.example.petstore.command.test
+
+import org.testcontainers.containers.BindMode
+import org.testcontainers.containers.KafkaContainer
+
+class CustomKafkaContainer : KafkaContainer() {
+    companion object {
+        private const val SCRIPT_PATH = "scripts"
+        private const val SCRIPT_SEND_MESSAGE = "send_message.sh"
+        private const val SCRIPT_CREATE_TOPIC = "create_topic.sh"
+        private const val CONTAINER_PATH = "/usr/helpers"
+        private const val CONTAINER_MESSAGE_COMMAND = "$CONTAINER_PATH/$SCRIPT_SEND_MESSAGE"
+        private const val CONTAINER_TOPIC_COMMAND = "$CONTAINER_PATH/$SCRIPT_CREATE_TOPIC"
+        private val CHMOD_CMD = arrayOf("chmod", "+xX")
+    }
+
+    init {
+        withClasspathResourceMapping(SCRIPT_PATH, CONTAINER_PATH, BindMode.READ_ONLY)
+    }
+
+    override fun start() {
+        super.start()
+        execInContainer(*CHMOD_CMD, CONTAINER_MESSAGE_COMMAND)
+        execInContainer(*CHMOD_CMD, CONTAINER_TOPIC_COMMAND)
+    }
+
+    fun createTopic(topic: String): Boolean =
+        execInContainer(CONTAINER_TOPIC_COMMAND, topic).exitCode == 0
+
+    fun sendMessage(topic: String, message: String): Boolean =
+        execInContainer(CONTAINER_MESSAGE_COMMAND, topic, message).exitCode == 0
+}
