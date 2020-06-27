@@ -19,13 +19,15 @@ internal class CommandsConsumerImplTest(
     @Autowired val commandsConsumerConfig: CommandsConsumerConfig
 ) {
     companion object {
+        private const val BOOTSTRAP_SERVERS_PROPERTY = "${CommandsConsumerConfig.CONFIG_PREFIX}.bootstrap-server"
+
         @Container
         private val KAFKA_CONTAINER = CustomKafkaContainer()
 
         @JvmStatic
         @DynamicPropertySource
         private fun testProperties(registry: DynamicPropertyRegistry) {
-            registry.add("service.commands.consumer.bootstrap-server", KAFKA_CONTAINER::getBootstrapServers)
+            registry.add(BOOTSTRAP_SERVERS_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
         }
     }
 

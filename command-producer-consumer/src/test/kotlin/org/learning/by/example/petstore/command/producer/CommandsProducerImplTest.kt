@@ -1,22 +1,17 @@
 package org.learning.by.example.petstore.command.producer
 
 import com.jayway.jsonpath.JsonPath
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.common.serialization.StringDeserializer
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.learning.by.example.petstore.command.dsl.command
+import org.learning.by.example.petstore.command.test.CustomKafkaContainer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.KafkaContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import reactor.kafka.receiver.KafkaReceiver
-import reactor.kafka.receiver.ReceiverOptions
-import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
 import java.time.Instant
 
@@ -27,13 +22,10 @@ internal class CommandsProducerImplTest(
     @Autowired val commandsProducerConfig: CommandsProducerConfig
 ) {
     companion object {
-        private const val CLIENT_ID = "pet_commands_consumer"
-        private const val GROUP_ID = "pet_commands_consumers"
-        private const val OFFSET_EARLIEST = "earliest"
         private const val BOOTSTRAP_SERVERS_PROPERTY = "${CommandsProducerConfig.CONFIG_PREFIX}.bootstrap-server"
 
         @Container
-        private val KAFKA_CONTAINER = KafkaContainer()
+        private val KAFKA_CONTAINER = CustomKafkaContainer()
 
         @JvmStatic
         @DynamicPropertySource
@@ -44,6 +36,7 @@ internal class CommandsProducerImplTest(
 
     @Test
     fun `we should send commands`() {
+        assertThat(KAFKA_CONTAINER.createTopic(commandsProducerConfig.topic)).isTrue()
         val commandToSend = command("example command") {
             "attribute1" value "value1"
             "attribute2" value 123
@@ -59,45 +52,19 @@ internal class CommandsProducerImplTest(
             }
             .verifyComplete()
 
-        StepVerifier.create(getStrings())
-            .expectSubscription()
-            .thenRequest(Long.MAX_VALUE)
-            .consumeNextWith {
-                assertThat(JsonPath.read<String>(it, "\$.id")).isEqualTo(commandToSend.id.toString())
-                assertThat(Instant.parse(JsonPath.read(it, "\$.timestamp")))
-                    .isEqualTo(commandToSend.timestamp)
-                assertThat(JsonPath.read<String>(it, "\$.commandName")).isEqualTo("example command")
+        val message = KAFKA_CONTAINER.getMessage(commandsProducerConfig.topic)
 
-                assertThat(JsonPath.read<String>(it, "\$.payload.attribute1"))
-                    .isEqualTo(commandToSend.get("attribute1"))
-                assertThat(JsonPath.read<Int>(it, "\$.payload.attribute2"))
-                    .isEqualTo(commandToSend.get("attribute2"))
-                assertThat(JsonPath.read<Boolean>(it, "\$.payload.attribute3"))
-                    .isEqualTo(commandToSend.get("attribute3"))
-                assertThat(JsonPath.read<Double>(it, "\$.payload.attribute4"))
-                    .isEqualTo(commandToSend.get("attribute4"))
-            }
-            .expectNextCount(0L)
-            .thenCancel()
-            .verify()
+        assertThat(JsonPath.read<String>(message, "\$.id")).isEqualTo(commandToSend.id.toString())
+        assertThat(Instant.parse(JsonPath.read(message, "\$.timestamp")))
+            .isEqualTo(commandToSend.timestamp)
+        assertThat(JsonPath.read<String>(message, "\$.commandName")).isEqualTo("example command")
+        assertThat(JsonPath.read<String>(message, "\$.payload.attribute1"))
+            .isEqualTo(commandToSend.get("attribute1"))
+        assertThat(JsonPath.read<Int>(message, "\$.payload.attribute2"))
+            .isEqualTo(commandToSend.get("attribute2"))
+        assertThat(JsonPath.read<Boolean>(message, "\$.payload.attribute3"))
+            .isEqualTo(commandToSend.get("attribute3"))
+        assertThat(JsonPath.read<Double>(message, "\$.payload.attribute4"))
+            .isEqualTo(commandToSend.get("attribute4"))
     }
-
-    private fun getStrings() = getKafkaReceiver().receive().flatMap {
-        val receiverOffset = it.receiverOffset()
-        receiverOffset.acknowledge()
-        it.value().toMono()
-    }
-
-    private fun getKafkaReceiver() = KafkaReceiver.create(
-        ReceiverOptions.create<String, String>(
-            hashMapOf<String, Any>(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to commandsProducerConfig.bootstrapServer,
-                ConsumerConfig.CLIENT_ID_CONFIG to CLIENT_ID,
-                ConsumerConfig.GROUP_ID_CONFIG to GROUP_ID,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to OFFSET_EARLIEST
-            )
-        ).subscription(setOf(commandsProducerConfig.topic))
-    )
 }
