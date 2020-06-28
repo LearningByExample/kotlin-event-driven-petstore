@@ -12,8 +12,8 @@ import org.springframework.context.ApplicationContext
 import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest
-@ActiveProfiles("producer", "consumer")
-internal class CommandProducerConsumerBeansTest(@Autowired val applicationContext: ApplicationContext) {
+@ActiveProfiles("producer")
+internal class CommandProducerBeanTest(@Autowired val applicationContext: ApplicationContext) {
     companion object {
         private val commandsProducerConfigBean = "${CommandsProducerConfig.PRODUCER_CONFIG_PREFIX}-" +
             "${CommandsProducerConfig::class.qualifiedName}"
@@ -24,10 +24,10 @@ internal class CommandProducerConsumerBeansTest(@Autowired val applicationContex
     }
 
     @Test
-    fun `we should have the producer and consumer beans`() {
+    fun `we should have only the producer beans`() {
         Assertions.assertThat(applicationContext.containsBean(commandsProducerConfigBean)).isTrue()
         Assertions.assertThat(applicationContext.containsBean(commandsProducerBean)).isTrue()
-        Assertions.assertThat(applicationContext.containsBean(commandsConsumerConfigBean)).isTrue()
-        Assertions.assertThat(applicationContext.containsBean(commandsConsumerBean)).isTrue()
+        Assertions.assertThat(applicationContext.containsBean(commandsConsumerConfigBean)).isFalse()
+        Assertions.assertThat(applicationContext.containsBean(commandsConsumerBean)).isFalse()
     }
 }

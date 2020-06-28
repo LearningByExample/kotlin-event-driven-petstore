@@ -3,9 +3,11 @@ package org.learning.by.example.petstore.command.consumer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.learning.by.example.petstore.command.consumer.CommandsConsumerConfig.Constants.CONSUMER_VALIDATE_PROPERTY
 import org.learning.by.example.petstore.command.test.CustomKafkaContainer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.junit.jupiter.Container
@@ -17,12 +19,12 @@ import java.util.UUID
 
 @SpringBootTest
 @Testcontainers
+@ActiveProfiles("consumer")
 internal class CommandsConsumerImplTest(
     @Autowired val commandsConsumerImpl: CommandsConsumerImpl,
     @Autowired val commandsConsumerConfig: CommandsConsumerConfig
 ) {
     companion object {
-        private const val BOOTSTRAP_SERVERS_PROPERTY = "${CommandsConsumerConfig.CONFIG_PREFIX}.bootstrap-server"
         private val FIRST_COMMAND =
             """
             {
@@ -58,7 +60,7 @@ internal class CommandsConsumerImplTest(
         @JvmStatic
         @DynamicPropertySource
         private fun testProperties(registry: DynamicPropertyRegistry) {
-            registry.add(BOOTSTRAP_SERVERS_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
+            registry.add(CONSUMER_VALIDATE_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
         }
     }
 

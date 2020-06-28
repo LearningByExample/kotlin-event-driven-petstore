@@ -5,9 +5,11 @@ import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.learning.by.example.petstore.command.dsl.command
+import org.learning.by.example.petstore.command.producer.CommandsProducerConfig.Constants.PRODUCER_VALIDATE_PROPERTY
 import org.learning.by.example.petstore.command.test.CustomKafkaContainer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.junit.jupiter.Container
@@ -17,20 +19,19 @@ import java.time.Instant
 
 @SpringBootTest
 @Testcontainers
+@ActiveProfiles("producer")
 internal class CommandsProducerImplTest(
     @Autowired val commandsProducerImpl: CommandsProducerImpl,
     @Autowired val commandsProducerConfig: CommandsProducerConfig
 ) {
     companion object {
-        private const val BOOTSTRAP_SERVERS_PROPERTY = "${CommandsProducerConfig.CONFIG_PREFIX}.bootstrap-server"
-
         @Container
         private val KAFKA_CONTAINER = CustomKafkaContainer()
 
         @JvmStatic
         @DynamicPropertySource
         private fun testProperties(registry: DynamicPropertyRegistry) {
-            registry.add(BOOTSTRAP_SERVERS_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
+            registry.add(PRODUCER_VALIDATE_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
         }
     }
 
