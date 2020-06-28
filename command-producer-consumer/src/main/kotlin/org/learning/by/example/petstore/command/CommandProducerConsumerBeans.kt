@@ -18,9 +18,9 @@ class CommandProducerConsumerBeans(
     private val commandsConsumerConfig: CommandsConsumerConfig,
     private val objectMapper: ObjectMapper
 ) {
-    @Bean
+    @Bean("CommandsProducer")
     fun commandsProducer(): CommandsProducer = CommandsProducerImpl(commandsProducerConfig, objectMapper)
 
-    @Bean
+    @Bean("CommandsConsumer")
     fun commandsConsumer(): CommandsConsumer = CommandsConsumerImpl(commandsConsumerConfig, objectMapper)
 }
