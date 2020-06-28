@@ -17,8 +17,10 @@ class CommandsDeserializer : Deserializer<Command> {
         }
     }
 
-    override fun deserialize(topic: String, data: ByteArray): Command {
-        return objectMapper.readValue(data)
+    override fun deserialize(topic: String, data: ByteArray) = try {
+        objectMapper.readValue<Command>(data)
+    } catch (ex: Throwable) {
+        throw ErrorDeserializingObject(ex)
     }
 
     override fun close() {}
