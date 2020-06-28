@@ -1,6 +1,7 @@
 package org.learning.by.example.petstore.command.consumer
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.apache.kafka.common.serialization.Deserializer
 import org.learning.by.example.petstore.command.Command
 
@@ -17,7 +18,7 @@ class CommandsDeserializer : Deserializer<Command> {
     }
 
     override fun deserialize(topic: String, data: ByteArray): Command {
-        return objectMapper.readValue(data, Command::class.java)
+        return objectMapper.readValue(data)
     }
 
     override fun close() {}
