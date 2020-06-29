@@ -26,4 +26,14 @@ internal class CustomKafkaContainerTest {
         assertThat(KAFKA_CONTAINER.getMessage(TEST_TOPIC)).isEqualTo("one")
         assertThat(KAFKA_CONTAINER.getMessage(TEST_TOPIC)).isEqualTo("two")
     }
+
+    @Test
+    fun `we could create a topic n times`() {
+        repeat(3) {
+            val message = it.toString()
+            assertThat(KAFKA_CONTAINER.createTopic(TEST_TOPIC)).isTrue()
+            assertThat(KAFKA_CONTAINER.sendMessage(TEST_TOPIC, message)).isTrue()
+            assertThat(KAFKA_CONTAINER.getMessage(TEST_TOPIC)).isEqualTo(message)
+        }
+    }
 }

@@ -29,8 +29,10 @@ class CustomKafkaContainer : KafkaContainer() {
         execInContainer(*CHMOD_CMD, CONTAINER_TOPIC_COMMAND)
     }
 
-    fun createTopic(topic: String): Boolean =
-        execInContainer(CONTAINER_TOPIC_COMMAND, topic).exitCode == 0
+    fun createTopic(topic: String) = with(execInContainer(CONTAINER_TOPIC_COMMAND, topic).exitCode == 0) {
+        if (this) readOffsetPerTopic[topic] = 0
+        this
+    }
 
     fun sendMessage(topic: String, message: String): Boolean =
         execInContainer(CONTAINER_MESSAGE_SEND_COMMAND, topic, message).exitCode == 0
