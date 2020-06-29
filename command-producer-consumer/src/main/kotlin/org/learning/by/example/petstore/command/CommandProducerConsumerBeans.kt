@@ -20,10 +20,10 @@ class CommandProducerConsumerBeans(private val objectMapper: ObjectMapper) {
     @Autowired(required = false) lateinit var commandsConsumerConfig: CommandsConsumerConfig
 
     @Bean("CommandsProducer")
-    @ConditionalOnProperty(CommandsProducerConfig.PRODUCER_VALIDATE_PROPERTY)
+    @ConditionalOnProperty(CommandsProducerConfig.PRODUCER_CONFIG_EXIST_PROPERTY)
     fun commandsProducer(): CommandsProducer = CommandsProducerImpl(commandsProducerConfig, objectMapper)
 
     @Bean("CommandsConsumer")
-    @ConditionalOnProperty(CommandsConsumerConfig.CONSUMER_VALIDATE_PROPERTY)
+    @ConditionalOnProperty(CommandsConsumerConfig.CONSUMER_CONFIG_EXIST_PROPERTY)
     fun commandsConsumer(): CommandsConsumer = CommandsConsumerImpl(commandsConsumerConfig, objectMapper)
 }

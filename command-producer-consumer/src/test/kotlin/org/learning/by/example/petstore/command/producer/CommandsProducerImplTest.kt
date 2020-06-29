@@ -5,7 +5,7 @@ import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.learning.by.example.petstore.command.dsl.command
-import org.learning.by.example.petstore.command.producer.CommandsProducerConfig.Constants.PRODUCER_VALIDATE_PROPERTY
+import org.learning.by.example.petstore.command.producer.CommandsProducerConfig.Constants.PRODUCER_CONFIG_BOOSTRAP_SERVER
 import org.learning.by.example.petstore.command.test.CustomKafkaContainer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -31,7 +31,7 @@ internal class CommandsProducerImplTest(
         @JvmStatic
         @DynamicPropertySource
         private fun testProperties(registry: DynamicPropertyRegistry) {
-            registry.add(PRODUCER_VALIDATE_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
+            registry.add(PRODUCER_CONFIG_BOOSTRAP_SERVER, KAFKA_CONTAINER::getBootstrapServers)
         }
     }
 

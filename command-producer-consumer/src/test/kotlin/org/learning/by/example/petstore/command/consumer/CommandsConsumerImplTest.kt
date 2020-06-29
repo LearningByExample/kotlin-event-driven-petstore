@@ -3,7 +3,7 @@ package org.learning.by.example.petstore.command.consumer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.learning.by.example.petstore.command.consumer.CommandsConsumerConfig.Constants.CONSUMER_VALIDATE_PROPERTY
+import org.learning.by.example.petstore.command.consumer.CommandsConsumerConfig.Constants.CONSUMER_CONFIG_BOOSTRAP_SERVER
 import org.learning.by.example.petstore.command.test.CustomKafkaContainer
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -60,7 +60,7 @@ internal class CommandsConsumerImplTest(
         @JvmStatic
         @DynamicPropertySource
         private fun testProperties(registry: DynamicPropertyRegistry) {
-            registry.add(CONSUMER_VALIDATE_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
+            registry.add(CONSUMER_CONFIG_BOOSTRAP_SERVER, KAFKA_CONTAINER::getBootstrapServers)
         }
     }
 
