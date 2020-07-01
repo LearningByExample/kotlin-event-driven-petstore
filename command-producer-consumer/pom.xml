@@ -8,7 +8,7 @@
         <version>2.3.1.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>org.learning.by.example.petstore.commands-consumer-producer</groupId>
+    <groupId>org.learning.by.example.petstore</groupId>
     <artifactId>commands-consumer-producer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>commands-consumer-producer</name>
