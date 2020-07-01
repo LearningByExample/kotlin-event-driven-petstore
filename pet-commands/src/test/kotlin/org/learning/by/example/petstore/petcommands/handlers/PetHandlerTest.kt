@@ -47,7 +47,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
               ]
             }
         """
-        val FAKE_ID = UUID.randomUUID().toString()
+        val FAKE_ID: UUID = UUID.randomUUID()
     }
 
     @MockBean

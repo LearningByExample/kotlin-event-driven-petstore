@@ -1,83 +1,53 @@
 package org.learning.by.example.petstore.petcommands.service
 
-import org.apache.kafka.clients.consumer.ConsumerConfig
-import org.apache.kafka.common.serialization.StringDeserializer
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.argThat
+import com.nhaarman.mockitokotlin2.given
+import com.nhaarman.mockitokotlin2.times
+import com.nhaarman.mockitokotlin2.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.learning.by.example.petstore.command.producer.CommandsProducer
 import org.learning.by.example.petstore.petcommands.model.Pet
+import org.learning.by.example.petstore.petcommands.service.PetCommandsImpl.Companion.CREATE_PET_COMMAND
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.KafkaContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
-import reactor.kafka.receiver.KafkaReceiver
-import reactor.kafka.receiver.ReceiverOptions
+import org.springframework.boot.test.mock.mockito.MockBean
 import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
+import java.util.UUID
 
 @SpringBootTest
-@Testcontainers
-class PetCommandsImplTest(
-    @Autowired val petCommandsImpl: PetCommandsImpl,
-    @Autowired val petCommandsProducerConfig: PetCommandsProducerConfig
-) {
+class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl) {
     companion object {
-        private const val CLIENT_ID = "pet_commands_consumer"
-        private const val GROUP_ID = "pet_commands_consumers"
-        private const val OFFSET_EARLIEST = "earliest"
-        private const val VALID_UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}"
-        private const val BOOTSTRAP_SERVERS_PROPERTY = "${PetCommandsProducerConfig.CONFIG_PREFIX}.bootstrap-server"
-
-        @Container
-        private val KAFKA_CONTAINER = KafkaContainer()
-
-        @JvmStatic
-        @DynamicPropertySource
-        private fun testProperties(registry: DynamicPropertyRegistry) {
-            registry.add(BOOTSTRAP_SERVERS_PROPERTY, KAFKA_CONTAINER::getBootstrapServers)
-        }
+        private const val PET_NAME = "fluffy"
+        private const val PET_CATEGORY = "dog"
+        private val PET_TAGS = listOf("puppy", "black")
     }
+
+    @MockBean
+    lateinit var commandsProducer: CommandsProducer
 
     @Test
     fun `we should send commands`() {
-        var id = ""
+        val uuid = UUID.randomUUID()
+        given(commandsProducer.sendCommand(any())).willReturn(uuid.toMono())
+
         StepVerifier
-            .create(petCommandsImpl.sendPetCreate(Pet("fluffy", "dog", listOf())))
+            .create(petCommandsImpl.sendPetCreate(Pet(PET_NAME, PET_CATEGORY, PET_TAGS)))
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
-            .consumeNextWith {
-                id = it
-                assertThat(id).matches(VALID_UUID)
-            }
+            .expectNext(uuid)
             .verifyComplete()
 
-        StepVerifier.create(getStrings())
-            .expectSubscription()
-            .thenRequest(Long.MAX_VALUE)
-            .expectNext(id)
-            .expectNextCount(0L)
-            .thenCancel()
-            .verify()
+        verify(commandsProducer, times(1)).sendCommand(
+            argThat {
+                assertThat(commandName).isEqualTo(CREATE_PET_COMMAND)
+                assertThat(get<String>("name")).isEqualTo(PET_NAME)
+                assertThat(get<String>("category")).isEqualTo(PET_CATEGORY)
+                assertThat(getList<String>("tags")).isEqualTo(PET_TAGS)
+                true
+            }
+        )
     }
-
-    private fun getStrings() = getKafkaReceiver().receive().flatMap {
-        val receiverOffset = it.receiverOffset()
-        receiverOffset.acknowledge()
-        it.value().toMono()
-    }
-
-    private fun getKafkaReceiver() = KafkaReceiver.create(
-        ReceiverOptions.create<String, String>(
-            hashMapOf<String, Any>(
-                ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to petCommandsProducerConfig.bootstrapServer,
-                ConsumerConfig.CLIENT_ID_CONFIG to CLIENT_ID,
-                ConsumerConfig.GROUP_ID_CONFIG to GROUP_ID,
-                ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to StringDeserializer::class.java,
-                ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to OFFSET_EARLIEST
-            )
-        ).subscription(setOf(petCommandsProducerConfig.topic))
-    )
 }

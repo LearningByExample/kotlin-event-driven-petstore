@@ -1,3 +1,5 @@
 package org.learning.by.example.petstore.petcommands.model
 
-data class Result(val id: String)
+import java.util.UUID
+
+data class Result(val id: UUID)

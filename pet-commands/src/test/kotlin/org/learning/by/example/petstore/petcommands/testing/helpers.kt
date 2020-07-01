@@ -16,7 +16,7 @@ inline fun <reified Type> Mono<ServerResponse>.verify(crossinline verifyFun: (Se
                             if (body is Type) {
                                 verifyFun(response, body)
                             } else {
-                                throw AssertionError("response has not a valid object type")
+                                throw AssertionError("response has not a valid object type, is ${body.javaClass}")
                             }
                         }.verifyComplete()
                 } else {

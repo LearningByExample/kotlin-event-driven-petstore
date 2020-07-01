@@ -15,6 +15,7 @@ import org.springframework.web.reactive.function.server.body
 import org.springframework.web.reactive.function.server.bodyToMono
 import reactor.kotlin.core.publisher.toMono
 import java.net.URI
+import java.util.UUID
 
 @Service
 class PetHandler(
@@ -26,7 +27,7 @@ class PetHandler(
         const val SERVER_ERROR = "Server Error"
     }
 
-    private fun toResponse(id: String) = with(Result(id)) {
+    private fun toResponse(id: UUID) = with(Result(id)) {
         ServerResponse.created(URI.create("/pet/$id"))
             .contentType(MediaType.APPLICATION_JSON)
             .body(this.toMono())
