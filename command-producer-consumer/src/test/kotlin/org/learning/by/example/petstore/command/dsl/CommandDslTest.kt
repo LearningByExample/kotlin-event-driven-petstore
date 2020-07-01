@@ -1,6 +1,6 @@
 package org.learning.by.example.petstore.command.dsl
 
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 internal class CommandDslTest {
@@ -20,13 +20,13 @@ internal class CommandDslTest {
             "attribute5" values listOf("one", "two", "three")
         }
 
-        Assertions.assertThat(command.commandName).isEqualTo("example command")
-        Assertions.assertThat(command.id.toString()).matches(VALID_UUID)
-        Assertions.assertThat(command.timestamp.toString()).matches(VALID_TIMESTAMP)
-        Assertions.assertThat(command.get<String>("attribute1")).isEqualTo("value1")
-        Assertions.assertThat(command.get<Int>("attribute2")).isEqualTo(123)
-        Assertions.assertThat(command.get<Boolean>("attribute3")).isEqualTo(false)
-        Assertions.assertThat(command.get<Double>("attribute4")).isEqualTo(125.5)
-        Assertions.assertThat(command.getList<String>("attribute5")).isEqualTo(listOf("one", "two", "three"))
+        assertThat(command.commandName).isEqualTo("example command")
+        assertThat(command.id.toString()).matches(VALID_UUID)
+        assertThat(command.timestamp.toString()).matches(VALID_TIMESTAMP)
+        assertThat(command.get<String>("attribute1")).isEqualTo("value1")
+        assertThat(command.get<Int>("attribute2")).isEqualTo(123)
+        assertThat(command.get<Boolean>("attribute3")).isEqualTo(false)
+        assertThat(command.get<Double>("attribute4")).isEqualTo(125.5)
+        assertThat(command.getList<String>("attribute5")).isEqualTo(listOf("one", "two", "three"))
     }
 }
