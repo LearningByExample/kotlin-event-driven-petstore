@@ -19,5 +19,14 @@ data class Command(val commandName: String, val payload: HashMap<String, Any>) {
         throw NoSuchElementException("attribute '$attribute' not found")
     }
 
+    inline fun <reified T : Any> getList(attribute: String) = with(get<List<Any>>(attribute)) {
+        if (this.all { it is T }) {
+            @Suppress("UNCHECKED_CAST")
+            this as List<T>
+        } else {
+            throw ClassCastException("attribute '$attribute' is not a List of ${T::class}")
+        }
+    }
+
     fun contains(attribute: String) = payload.containsKey(attribute)
 }
