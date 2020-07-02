@@ -1,9 +1,12 @@
 package org.learning.by.example.petstore.command.producer
 
 import com.jayway.jsonpath.JsonPath
-import org.assertj.core.api.Assertions
+import org.apache.kafka.common.errors.TimeoutException
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.command.producer.CommandsProducerConfig.Constants.PRODUCER_CONFIG_BOOSTRAP_SERVER
 import org.learning.by.example.petstore.command.test.CustomKafkaContainer
@@ -20,6 +23,7 @@ import java.time.Instant
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("producer")
+@TestMethodOrder(OrderAnnotation::class)
 internal class CommandsProducerImplTest(
     @Autowired val commandsProducerImpl: CommandsProducerImpl,
     @Autowired val commandsProducerConfig: CommandsProducerConfig
@@ -36,6 +40,7 @@ internal class CommandsProducerImplTest(
     }
 
     @Test
+    @Order(1)
     fun `we should send commands`() {
         assertThat(KAFKA_CONTAINER.createTopic(commandsProducerConfig.topic)).isTrue()
         val commandToSend = command("example command") {
@@ -49,7 +54,7 @@ internal class CommandsProducerImplTest(
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
             .consumeNextWith {
-                Assertions.assertThat(it).isEqualTo(commandToSend.id)
+                assertThat(it).isEqualTo(commandToSend.id)
             }
             .verifyComplete()
 
@@ -67,5 +72,19 @@ internal class CommandsProducerImplTest(
             .isEqualTo(commandToSend.get("attribute3"))
         assertThat(JsonPath.read<Double>(message, "\$.payload.attribute4"))
             .isEqualTo(commandToSend.get("attribute4"))
+    }
+
+    @Test
+    @Order(2)
+    fun `we should handle timeouts`() {
+        KAFKA_CONTAINER.stop()
+
+        StepVerifier.create(commandsProducerImpl.sendCommand(command("example command") {}))
+            .expectSubscription()
+            .thenRequest(Long.MAX_VALUE)
+            .expectErrorMatches {
+                it is SendCommandException && it.cause is TimeoutException
+            }
+            .verify()
     }
 }

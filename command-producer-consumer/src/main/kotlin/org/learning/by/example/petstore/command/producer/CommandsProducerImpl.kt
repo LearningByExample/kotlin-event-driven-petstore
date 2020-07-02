@@ -22,6 +22,10 @@ internal class CommandsProducerImpl(
                 ProducerConfig.BOOTSTRAP_SERVERS_CONFIG to commandsProducerConfig.bootstrapServer,
                 ProducerConfig.CLIENT_ID_CONFIG to commandsProducerConfig.clientId,
                 ProducerConfig.ACKS_CONFIG to commandsProducerConfig.ack,
+                ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG to commandsProducerConfig.timeoutMS,
+                ProducerConfig.DELIVERY_TIMEOUT_MS_CONFIG to commandsProducerConfig.timeoutMS,
+                ProducerConfig.TRANSACTION_TIMEOUT_CONFIG to commandsProducerConfig.timeoutMS,
+                ProducerConfig.MAX_BLOCK_MS_CONFIG to commandsProducerConfig.timeoutMS,
                 ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG to StringSerializer::class.java,
                 ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to CommandsSerializer::class.java,
                 CommandsSerializer.OBJECT_MAPPER_CONFIG_KEY to objectMapper
@@ -35,5 +39,5 @@ internal class CommandsProducerImpl(
         ).toMono()
     ).single().flatMap { command.id.toMono() }
 
-    override fun sendCommand(command: Command): Mono<UUID> = send(command)
+    override fun sendCommand(command: Command): Mono<UUID> = send(command).onErrorMap(::SendCommandException)
 }

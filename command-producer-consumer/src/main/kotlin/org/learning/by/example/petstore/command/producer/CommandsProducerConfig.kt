@@ -13,7 +13,8 @@ data class CommandsProducerConfig(
     val bootstrapServer: String,
     val topic: String,
     val clientId: String,
-    val ack: String
+    val ack: String,
+    val timeoutMS: Int
 ) {
     companion object Constants {
         const val PRODUCER_CONFIG_PREFIX = "service.commands.producer"
