@@ -5,3 +5,4 @@ service:
             topic: pet-commands
             client-id: pet_commands_producer
             ack: all
+            timeout-ms: 500
