@@ -16,6 +16,7 @@ import org.learning.by.example.petstore.petcommands.handlers.PetHandler.Companio
 import org.learning.by.example.petstore.petcommands.model.ErrorResponse
 import org.learning.by.example.petstore.petcommands.model.Result
 import org.learning.by.example.petstore.petcommands.service.PetCommands
+import org.learning.by.example.petstore.petcommands.service.SendPetCreateException
 import org.learning.by.example.petstore.petcommands.testing.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -279,7 +280,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     }
 
     @Test
-    fun `we should get an error when something goes wrong sending a message`() {
+    fun `we should get an error when something goes wrong calling a service`() {
         doReturn(Mono.error<Any>(RuntimeException(ERROR_CAUSE))).whenever(petCommands).sendPetCreate(any())
         val httpRequest = MockServerHttpRequest
             .post("/pet")
@@ -290,8 +291,28 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
 
         petHandler.postPet(request).verify { response, error: ErrorResponse ->
             assertThat(response.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
-            assertThat(error.message).isEqualTo(PetHandler.SERVER_ERROR)
-            assertThat(error.description).isEqualTo(ERROR_CAUSE)
+            assertThat(error.message).isEqualTo("Server Error")
+            assertThat(error.description).isEqualTo("Invalid Resource")
+
+            verify(petCommands).sendPetCreate(any())
+            verifyNoMoreInteractions(petCommands)
+        }
+    }
+
+    @Test
+    fun `we should get an specific error when getting a send pet create exception`() {
+        doReturn(Mono.error<Any>(SendPetCreateException(RuntimeException()))).whenever(petCommands).sendPetCreate(any())
+        val httpRequest = MockServerHttpRequest
+            .post("/pet")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(VALID_PET)
+        val webExchange = MockServerWebExchange.from(httpRequest)
+        val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
+
+        petHandler.postPet(request).verify { response, error: ErrorResponse ->
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+            assertThat(error.message).isEqualTo("Error creating pet")
+            assertThat(error.description).isEqualTo("Error sending pet create command")
 
             verify(petCommands).sendPetCreate(any())
             verifyNoMoreInteractions(petCommands)

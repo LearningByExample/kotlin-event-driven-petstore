@@ -4,6 +4,7 @@ import org.learning.by.example.petstore.petcommands.model.ErrorResponse
 import org.learning.by.example.petstore.petcommands.model.Pet
 import org.learning.by.example.petstore.petcommands.model.Result
 import org.learning.by.example.petstore.petcommands.service.PetCommands
+import org.learning.by.example.petstore.petcommands.service.SendPetCreateException
 import org.learning.by.example.petstore.reactor.dtovalidator.DTOValidator
 import org.learning.by.example.petstore.reactor.dtovalidator.InvalidDtoException
 import org.springframework.http.HttpStatus
@@ -25,6 +26,7 @@ class PetHandler(
     companion object {
         const val INVALID_RESOURCE = "Invalid Resource"
         const val SERVER_ERROR = "Server Error"
+        const val CREATING_PET_ERROR = "Error creating pet"
     }
 
     private fun toResponse(id: UUID) = with(Result(id)) {
@@ -33,12 +35,14 @@ class PetHandler(
             .body(this.toMono())
     }
 
-    private fun toError(throwable: Throwable) = if (throwable is InvalidDtoException) {
-        ServerResponse.status(HttpStatus.BAD_REQUEST)
+    private fun toError(throwable: Throwable) = when (throwable) {
+        is InvalidDtoException -> ServerResponse.status(HttpStatus.BAD_REQUEST)
             .contentType(MediaType.APPLICATION_JSON)
             .body(ErrorResponse(INVALID_RESOURCE, throwable.message!!).toMono())
-    } else {
-        ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        is SendPetCreateException -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(ErrorResponse(CREATING_PET_ERROR, throwable.localizedMessage!!).toMono())
+        else -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .contentType(MediaType.APPLICATION_JSON)
             .body(ErrorResponse(SERVER_ERROR, throwable.localizedMessage!!).toMono())
     }
