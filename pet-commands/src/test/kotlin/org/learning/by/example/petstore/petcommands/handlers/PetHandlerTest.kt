@@ -8,7 +8,6 @@ import com.nhaarman.mockitokotlin2.verifyNoMoreInteractions
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -28,6 +27,7 @@ import org.springframework.mock.web.server.MockServerWebExchange
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.reactive.function.server.HandlerStrategies
 import org.springframework.web.reactive.function.server.ServerRequest
+import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import java.util.UUID
 
@@ -48,15 +48,11 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             }
         """
         val FAKE_ID: UUID = UUID.randomUUID()
+        const val ERROR_CAUSE = "throwable cause"
     }
 
     @MockBean
     private lateinit var petCommands: PetCommands
-
-    @BeforeEach
-    fun setup() {
-        doReturn(FAKE_ID.toMono()).whenever(petCommands).sendPetCreate(any())
-    }
 
     @AfterEach
     fun tearDown() {
@@ -69,189 +65,192 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     }
 
     @TestFactory
-    fun `We should get bad request when adding a pet with bad input`() = listOf(
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with empty name",
-            parameters = TestCase.Parameters(
-                body =
+    fun `We should get bad request when adding a pet with bad input`(): List<DynamicTest> {
+        doReturn(FAKE_ID.toMono()).whenever(petCommands).sendPetCreate(any())
+        return listOf(
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with empty name",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "",
-                              "category": "dog"
-                            }
-                       """
+                                {
+                                  "name": "",
+                                  "category": "dog"
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid name, size must be between 3 and 20."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid name, size must be between 3 and 20."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with a long name",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a long name",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "supersupersuperfluffy",
-                              "category": "dog"
-                            }
-                       """
+                                {
+                                  "name": "supersupersuperfluffy",
+                                  "category": "dog"
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid name, size must be between 3 and 20."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid name, size must be between 3 and 20."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with a bad name",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a bad name",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "super fluffy",
-                              "category": "dog"
-                            }
-                       """
+                                {
+                                  "name": "super fluffy",
+                                  "category": "dog"
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid name, should be alphanumeric."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid name, should be alphanumeric."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with no name",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with no name",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "category": "dog"
-                            }
-                       """
+                                {
+                                  "category": "dog"
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid name, must not be null."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid name, must not be null."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with empty category",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with empty category",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "fluffy1",
-                              "category": ""
-                            }
-                       """
+                                {
+                                  "name": "fluffy1",
+                                  "category": ""
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid category, size must be between 3 and 15."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid category, size must be between 3 and 15."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with a long category",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a long category",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "fluffy2",
-                              "category": "megamegamegamegadog"
-                            }
-                       """
+                                {
+                                  "name": "fluffy2",
+                                  "category": "megamegamegamegadog"
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid category, size must be between 3 and 15."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid category, size must be between 3 and 15."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with a bad category",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a bad category",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "fluffy",
-                              "category": "dog1"
-                            }
-                       """
+                                {
+                                  "name": "fluffy",
+                                  "category": "dog1"
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid category, should be only alphabetic characters."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid category, should be only alphabetic characters."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with no category",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with no category",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "fluffy"
-                            }
-                       """
+                                {
+                                  "name": "fluffy"
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid category, must not be null."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid category, must not be null."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with a invalid tags",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a invalid tags",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "fluffy",
-                              "category" : "dog",
-                              "tags" : [ "do" ]
-                            }
-                       """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "tags" : [ "do" ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with a valid & invalid tags",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a valid & invalid tags",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "fluffy",
-                              "category" : "dog",
-                              "tags" : [ "beauty", "do" ]
-                            }
-                       """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "tags" : [ "beauty", "do" ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
+                )
             ),
-            expect = TestCase.Expect(
-                error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
-            )
-        ),
-        TestCase(
-            name = "we should get a bad request when trying to add a pet with a empty tag",
-            parameters = TestCase.Parameters(
-                body =
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a empty tag",
+                parameters = TestCase.Parameters(
+                    body =
                     """
-                            {
-                              "name": "fluffy",
-                              "category" : "dog",
-                              "tags" : [ "" ]
-                            }
-                       """
-            ),
-            expect = TestCase.Expect(
-                error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "tags" : [ "" ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
+                )
             )
-        )
-    ).map {
-        DynamicTest.dynamicTest(it.name) {
-            val httpRequest = MockServerHttpRequest
-                .post("/pet")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(it.parameters.body)
-            val webExchange = MockServerWebExchange.from(httpRequest)
-            val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
+        ).map {
+            DynamicTest.dynamicTest(it.name) {
+                val httpRequest = MockServerHttpRequest
+                    .post("/pet")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(it.parameters.body)
+                val webExchange = MockServerWebExchange.from(httpRequest)
+                val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
 
-            petHandler.postPet(request).verify { response, result: ErrorResponse ->
-                assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST)
-                assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
-                assertThat(response.headers().location).isNull()
+                petHandler.postPet(request).verify { response, result: ErrorResponse ->
+                    assertThat(response.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST)
+                    assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
+                    assertThat(response.headers().location).isNull()
 
-                assertThat(result.message).isEqualTo(INVALID_RESOURCE)
-                assertThat(result.description).isEqualTo(it.expect.error)
+                    assertThat(result.message).isEqualTo(INVALID_RESOURCE)
+                    assertThat(result.description).isEqualTo(it.expect.error)
+                }
             }
         }
     }
@@ -260,6 +259,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     fun `we should get the result and headers when adding a pet`() {
         // we may need to change this if this issue isn't fix :
         // https://github.com/spring-projects/spring-framework/issues/25087
+        doReturn(FAKE_ID.toMono()).whenever(petCommands).sendPetCreate(any())
         val httpRequest = MockServerHttpRequest
             .post("/pet")
             .contentType(MediaType.APPLICATION_JSON)
@@ -273,6 +273,26 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
 
             assertThat(result.id).isEqualTo(FAKE_ID)
+            verify(petCommands).sendPetCreate(any())
+            verifyNoMoreInteractions(petCommands)
+        }
+    }
+
+    @Test
+    fun `we should get an error when something goes wrong sending a message`() {
+        doReturn(Mono.error<Any>(RuntimeException(ERROR_CAUSE))).whenever(petCommands).sendPetCreate(any())
+        val httpRequest = MockServerHttpRequest
+            .post("/pet")
+            .contentType(MediaType.APPLICATION_JSON)
+            .body(VALID_PET)
+        val webExchange = MockServerWebExchange.from(httpRequest)
+        val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
+
+        petHandler.postPet(request).verify { response, error: ErrorResponse ->
+            assertThat(response.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+            assertThat(error.message).isEqualTo(PetHandler.SERVER_ERROR)
+            assertThat(error.description).isEqualTo(ERROR_CAUSE)
+
             verify(petCommands).sendPetCreate(any())
             verifyNoMoreInteractions(petCommands)
         }
