@@ -6,7 +6,6 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import org.junit.jupiter.api.assertThrows
 import org.learning.by.example.petstore.command.consumer.CommandsConsumerConfig.Constants.CONSUMER_CONFIG_BOOSTRAP_SERVER
 import org.learning.by.example.petstore.command.test.CustomKafkaContainer
 import org.springframework.beans.factory.annotation.Autowired
@@ -132,19 +131,24 @@ internal class CommandsConsumerImplTest(
 
     @Order(1)
     @Test
-    fun `we can get topics`() {
-        val topics = commandsConsumerImpl.topics()
-        assertThat(topics).contains(commandsConsumerConfig.topic)
+    fun `we can get check if we can connect to Kafka`() {
+        StepVerifier.create(commandsConsumerImpl.isKafkaAvailable)
+            .expectSubscription()
+            .expectNext(true)
+            .verifyComplete()
     }
 
     @Order(2)
     @Test
-    fun `we can't get topics if the container is stopped`() {
+    fun `we can get check if noy alive`() {
         if (KAFKA_CONTAINER.isRunning) KAFKA_CONTAINER.stop()
 
-        assertThrows<ConnectingToKafkaException> {
-            commandsConsumerImpl.topics()
-        }
+        StepVerifier.create(commandsConsumerImpl.isKafkaAvailable)
+            .expectSubscription()
+            .expectErrorMatches {
+                it is ConnectingToKafkaException
+            }
+            .verify()
     }
 
     @Order(2)
