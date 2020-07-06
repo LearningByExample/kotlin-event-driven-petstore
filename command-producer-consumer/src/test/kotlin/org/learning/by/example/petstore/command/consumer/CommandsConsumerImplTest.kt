@@ -2,7 +2,11 @@ package org.learning.by.example.petstore.command.consumer
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.MethodOrderer
+import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
+import org.junit.jupiter.api.assertThrows
 import org.learning.by.example.petstore.command.consumer.CommandsConsumerConfig.Constants.CONSUMER_CONFIG_BOOSTRAP_SERVER
 import org.learning.by.example.petstore.command.test.CustomKafkaContainer
 import org.springframework.beans.factory.annotation.Autowired
@@ -20,6 +24,7 @@ import java.util.UUID
 @SpringBootTest
 @Testcontainers
 @ActiveProfiles("consumer")
+@TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 internal class CommandsConsumerImplTest(
     @Autowired val commandsConsumerImpl: CommandsConsumerImpl,
     @Autowired val commandsConsumerConfig: CommandsConsumerConfig
@@ -66,10 +71,11 @@ internal class CommandsConsumerImplTest(
 
     @BeforeEach
     fun setup() {
-        assertThat(KAFKA_CONTAINER.createTopic(commandsConsumerConfig.topic)).isTrue()
+        if (KAFKA_CONTAINER.isRunning) assertThat(KAFKA_CONTAINER.createTopic(commandsConsumerConfig.topic)).isTrue()
     }
 
     @Test
+    @Order(1)
     fun `we should receive commands`() {
         assertThat(KAFKA_CONTAINER.sendMessage(commandsConsumerConfig.topic, FIRST_COMMAND)).isTrue()
         assertThat(KAFKA_CONTAINER.sendMessage(commandsConsumerConfig.topic, SECOND_COMMAND)).isTrue()
@@ -97,6 +103,7 @@ internal class CommandsConsumerImplTest(
     }
 
     @Test
+    @Order(1)
     fun `we should error on invalid command`() {
         assertThat(KAFKA_CONTAINER.sendMessage(commandsConsumerConfig.topic, INVALID_COMMAND)).isTrue()
 
@@ -110,6 +117,7 @@ internal class CommandsConsumerImplTest(
     }
 
     @Test
+    @Order(1)
     fun `we should error on empty command`() {
         assertThat(KAFKA_CONTAINER.sendMessage(commandsConsumerConfig.topic, EMPTY_COMMAND)).isTrue()
 
@@ -120,5 +128,36 @@ internal class CommandsConsumerImplTest(
                 it is ErrorDeserializingObject
             }
             .verify(Duration.ofSeconds(5L))
+    }
+
+    @Order(1)
+    @Test
+    fun `we can get topics`() {
+        val topics = commandsConsumerImpl.topics()
+        assertThat(topics).contains(commandsConsumerConfig.topic)
+    }
+
+    @Order(2)
+    @Test
+    fun `we can't get topics if the container is stopped`() {
+        if (KAFKA_CONTAINER.isRunning) KAFKA_CONTAINER.stop()
+
+        assertThrows<ConnectingToKafkaException> {
+            commandsConsumerImpl.topics()
+        }
+    }
+
+    @Order(2)
+    @Test
+    fun `we should error on failure to connect`() {
+        if (KAFKA_CONTAINER.isRunning) KAFKA_CONTAINER.stop()
+
+        StepVerifier.create(commandsConsumerImpl.receiveCommands())
+            .expectSubscription()
+            .thenRequest(Long.MAX_VALUE)
+            .expectErrorMatches {
+                it is ConnectingToKafkaException
+            }
+            .verify(Duration.ofSeconds(5))
     }
 }

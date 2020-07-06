@@ -14,7 +14,8 @@ data class CommandsConsumerConfig(
     val topic: String,
     val clientId: String,
     val groupId: String,
-    val offsetEarliest: String
+    val offsetEarliest: String,
+    val timeoutMS: Int
 ) {
     companion object Constants {
         const val CONSUMER_CONFIG_PREFIX = "service.commands.consumer"
