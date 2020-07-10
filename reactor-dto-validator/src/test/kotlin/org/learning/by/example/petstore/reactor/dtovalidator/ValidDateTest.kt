@@ -40,6 +40,15 @@ internal class ValidDateTest {
             )
         ),
         TestCase(
+            name = "we should not validate anything when it is null",
+            parameters = TestCase.Parameters(
+                objectToValidate = DateString(null)
+            ),
+            expect = TestCase.Expect(
+                error = false
+            )
+        ),
+        TestCase(
             name = "we should get an error when it is not a valid date",
             parameters = TestCase.Parameters(
                 objectToValidate = DateString("2020-02-30T00:00:00.0Z")
@@ -58,12 +67,12 @@ internal class ValidDateTest {
             )
         ),
         TestCase(
-            name = "we should not validate anything when it is null",
+            name = "we should not validate anything when it is empty",
             parameters = TestCase.Parameters(
-                objectToValidate = DateString(null)
+                objectToValidate = DateString("")
             ),
             expect = TestCase.Expect(
-                error = false
+                error = true
             )
         )
     ).map {
