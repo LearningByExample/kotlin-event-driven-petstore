@@ -26,6 +26,9 @@ class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl) {
     companion object {
         private const val PET_NAME = "fluffy"
         private const val PET_CATEGORY = "dog"
+        private const val BREED = "german shepherd"
+        private const val DOB = "2020-06-28T00:00:00.0Z"
+        private val VACCINES = listOf("rabies", "parvovirus")
         private val PET_TAGS = listOf("puppy", "black")
     }
 
@@ -38,7 +41,7 @@ class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl) {
         given(commandsProducer.sendCommand(any())).willReturn(uuid.toMono())
 
         StepVerifier
-            .create(petCommandsImpl.sendPetCreate(Pet(PET_NAME, PET_CATEGORY, PET_TAGS)))
+            .create(petCommandsImpl.sendPetCreate(Pet(PET_NAME, PET_CATEGORY, BREED, DOB, VACCINES, PET_TAGS)))
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
             .expectNext(uuid)
@@ -61,10 +64,10 @@ class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl) {
             .whenever(commandsProducer).sendCommand(any())
 
         StepVerifier
-            .create(petCommandsImpl.sendPetCreate(Pet(PET_NAME, PET_CATEGORY, PET_TAGS)))
+            .create(petCommandsImpl.sendPetCreate(Pet(PET_NAME, PET_CATEGORY, BREED, DOB, VACCINES, PET_TAGS)))
             .expectSubscription()
             .thenRequest(Long.MAX_VALUE)
-            .consumeErrorWith{
+            .consumeErrorWith {
                 assertThat(it).isInstanceOf(SendPetCreateException::class.java)
                 assertThat(it.message).isEqualTo("Error sending pet create command")
                 assertThat(it.localizedMessage).isEqualTo("Error sending pet create command")

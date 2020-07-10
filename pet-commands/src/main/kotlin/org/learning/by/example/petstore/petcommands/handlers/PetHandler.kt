@@ -36,15 +36,18 @@ class PetHandler(
     }
 
     private fun toError(throwable: Throwable) = when (throwable) {
-        is InvalidDtoException -> ServerResponse.status(HttpStatus.BAD_REQUEST)
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(ErrorResponse(INVALID_RESOURCE, throwable.message!!).toMono())
-        is SendPetCreateException -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(ErrorResponse(CREATING_PET_ERROR, throwable.localizedMessage!!).toMono())
-        else -> ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .contentType(MediaType.APPLICATION_JSON)
-            .body(ErrorResponse(SERVER_ERROR, throwable.localizedMessage!!).toMono())
+        is InvalidDtoException ->
+            ServerResponse.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ErrorResponse(INVALID_RESOURCE, throwable.message!!).toMono())
+        is SendPetCreateException ->
+            ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ErrorResponse(CREATING_PET_ERROR, throwable.localizedMessage!!).toMono())
+        else ->
+            ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ErrorResponse(SERVER_ERROR, throwable.localizedMessage!!).toMono())
     }
 
     private fun validate(pet: Pet) = dto.validate(pet)

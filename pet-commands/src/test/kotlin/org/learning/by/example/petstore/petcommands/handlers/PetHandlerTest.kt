@@ -41,6 +41,13 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             {
               "name": "fluffy",
               "category": "dog",
+              "breed": "german shepherd",
+              "dob": "2020-06-28T00:00:00.0Z",
+              "vaccines": [
+                "rabies",
+                "parvovirus",
+                "distemper"
+              ],
               "tags" : [
                 "soft",
                 "beauty",
@@ -49,7 +56,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             }
         """
         val FAKE_ID: UUID = UUID.randomUUID()
-        const val ERROR_CAUSE = "throwable cause"
+        const val ERROR_CAUSE = "Invalid Resource"
     }
 
     @MockBean
@@ -73,10 +80,17 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with empty name",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "",
-                                  "category": "dog"
+                                  "category": "dog",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -88,10 +102,17 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a long name",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "supersupersuperfluffy",
-                                  "category": "dog"
+                                  "category": "dog",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -103,10 +124,17 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a bad name",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "super fluffy",
-                                  "category": "dog"
+                                  "category": "dog",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -118,9 +146,16 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with no name",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
-                                  "category": "dog"
+                                  "category": "dog",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -132,10 +167,17 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with empty category",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "fluffy1",
-                                  "category": ""
+                                  "category": "",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -147,10 +189,17 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a long category",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "fluffy2",
-                                  "category": "megamegamegamegadog"
+                                  "category": "megamegamegamegadog",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -162,10 +211,17 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a bad category",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "fluffy",
-                                  "category": "dog1"
+                                  "category": "dog1",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -177,9 +233,16 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with no category",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
-                                  "name": "fluffy"
+                                  "name": "fluffy",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -191,11 +254,18 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a invalid tags",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "fluffy",
                                   "category" : "dog",
-                                  "tags" : [ "do" ]
+                                  "tags" : [ "do" ],
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
                                 }
                            """
                 ),
@@ -207,10 +277,17 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a valid & invalid tags",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "fluffy",
                                   "category" : "dog",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ],
                                   "tags" : [ "beauty", "do" ]
                                 }
                            """
@@ -223,16 +300,251 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a empty tag",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "fluffy",
                                   "category" : "dog",
+                                  "breed": "german shepherd",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ],
                                   "tags" : [ "" ]
                                 }
                            """
                 ),
                 expect = TestCase.Expect(
                     error = "Invalid tags, each should be between 3 and 15 alphabetic characters or hyphen."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with empty breed",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid breed, size must be between 5 and 25."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with no breed",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid breed, must not be null."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a bad breed",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german?",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid breed, should be alphabetic characters or space."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with long breed",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german long long long long",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid breed, size must be between 5 and 25."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a bad dob",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german",
+                                  "dob": "2020-02-30T00:00:00.0Z",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid dob, should be a valid date."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with no dob",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid dob, must not be null."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with an empty dob",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german",
+                                  "dob": "",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid dob, should be a valid date."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with no vaccines",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german",
+                                  "dob": "2020-06-28T00:00:00.0Z"
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid vaccines, must not be null."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a bad vaccine",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "bad*value"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid vaccines, each should be between 5 and 50 alphabetic characters, hyphen or space."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a valid & invalid vaccine",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [
+                                    "good value",
+                                    "bad*value"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid vaccines, each should be between 5 and 50 alphabetic characters, hyphen or space."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with an empty vaccine",
+                parameters = TestCase.Parameters(
+                    body =
+                        """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german",
+                                  "dob": "2020-06-28T00:00:00.0Z",
+                                  "vaccines": [ "" ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid vaccines, each should be between 5 and 50 alphabetic characters, hyphen or space."
                 )
             )
         ).map {
