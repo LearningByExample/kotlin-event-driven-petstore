@@ -29,7 +29,7 @@ internal class ValidDateTest {
     @TestFactory
     fun `test tags with invalid format`() = listOf(
         TestCase(
-            name = "we should not get any error when it is a valid date",
+            name = "we shouldn't get an error when is a valid date",
             parameters = TestCase.Parameters(
                 objectToValidate = DateString("2020-02-15T00:00:00.0Z")
             ),
@@ -38,7 +38,7 @@ internal class ValidDateTest {
             )
         ),
         TestCase(
-            name = "we should not validate anything when it is null",
+            name = "we shouldn't get an error when is null",
             parameters = TestCase.Parameters(
                 objectToValidate = DateString(null)
             ),
@@ -47,7 +47,7 @@ internal class ValidDateTest {
             )
         ),
         TestCase(
-            name = "we should get an error when it is not a valid date",
+            name = "we should get an error when is not a valid date",
             parameters = TestCase.Parameters(
                 objectToValidate = DateString("2020-02-30T00:00:00.0Z")
             ),
@@ -56,16 +56,16 @@ internal class ValidDateTest {
             )
         ),
         TestCase(
-            name = "we should get an error when it is a text",
+            name = "we should get an error when is not a date",
             parameters = TestCase.Parameters(
-                objectToValidate = DateString("hello")
+                objectToValidate = DateString("some value")
             ),
             expect = TestCase.Expect(
                 error = true
             )
         ),
         TestCase(
-            name = "we should not validate anything when it is empty",
+            name = "we shouldn't get an error when is empty",
             parameters = TestCase.Parameters(
                 objectToValidate = DateString("")
             ),
