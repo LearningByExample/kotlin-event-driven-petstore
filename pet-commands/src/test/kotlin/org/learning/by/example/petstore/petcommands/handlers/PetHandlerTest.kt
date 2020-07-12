@@ -410,7 +410,7 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a bad dob",
                 parameters = TestCase.Parameters(
                     body =
-                    """
+                        """
                                 {
                                   "name": "fluffy",
                                   "category" : "dog",

@@ -19,6 +19,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
+import java.time.Instant
 import java.util.UUID
 
 @SpringBootTest
@@ -52,6 +53,9 @@ class PetCommandsImplTest(@Autowired val petCommandsImpl: PetCommandsImpl) {
                 assertThat(commandName).isEqualTo(CREATE_PET_COMMAND)
                 assertThat(get<String>("name")).isEqualTo(PET_NAME)
                 assertThat(get<String>("category")).isEqualTo(PET_CATEGORY)
+                assertThat(get<String>("breed")).isEqualTo(BREED)
+                assertThat(get<Instant>("dob")).isEqualTo(Instant.parse(DOB))
+                assertThat(getList<String>("vaccines")).isEqualTo(VACCINES)
                 assertThat(getList<String>("tags")).isEqualTo(PET_TAGS)
                 true
             }
