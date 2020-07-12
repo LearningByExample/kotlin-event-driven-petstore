@@ -10,16 +10,14 @@ import javax.validation.ValidatorFactory
 
 internal class ValidDateTest {
     companion object {
-        private const val ERROR_MESSAGE = "it an invalid date"
+        private const val ERROR_MESSAGE = "invalid date"
 
         private val factory: ValidatorFactory = Validation.buildDefaultValidatorFactory()
         private val validator: Validator = factory.validator
     }
 
     data class DateString(
-        @field:ValidDate(
-            message = ERROR_MESSAGE
-        )
+        @field:ValidDate(ERROR_MESSAGE)
         val value: String?
     )
 
