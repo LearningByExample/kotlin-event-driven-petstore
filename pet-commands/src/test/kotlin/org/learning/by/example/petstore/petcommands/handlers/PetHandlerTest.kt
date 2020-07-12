@@ -410,6 +410,28 @@ class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 name = "we should get a bad request when trying to add a pet with a bad dob",
                 parameters = TestCase.Parameters(
                     body =
+                    """
+                                {
+                                  "name": "fluffy",
+                                  "category" : "dog",
+                                  "breed": "german",
+                                  "dob": "wrong value",
+                                  "vaccines": [
+                                    "rabies",
+                                    "parvovirus",
+                                    "distemper"
+                                  ]
+                                }
+                           """
+                ),
+                expect = TestCase.Expect(
+                    error = "Invalid dob, should be a valid date."
+                )
+            ),
+            TestCase(
+                name = "we should get a bad request when trying to add a pet with a incorrect dob",
+                parameters = TestCase.Parameters(
+                    body =
                         """
                                 {
                                   "name": "fluffy",
