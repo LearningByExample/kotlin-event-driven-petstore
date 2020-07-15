@@ -1,5 +1,5 @@
 spring:
     r2dbc:
         url: r2dbc:postgresql://localhost:5432/postgres
-        username: petuser
-        password: petpwd
+        username: user
+        password: pass
