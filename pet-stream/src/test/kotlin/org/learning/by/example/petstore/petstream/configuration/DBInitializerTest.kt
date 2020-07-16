@@ -4,7 +4,9 @@ import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.whenever
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 import org.learning.by.example.petstore.petstream.listener.StreamListener
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -40,6 +42,8 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
             registry.add("spring.r2dbc.password", ::getPassword)
             registry.add("db.initialize") { "true" }
         }
+
+        val TABLES_TO_CHECK = arrayOf("categories", "breeds", "pets", "vaccines", "tags", "pets_vaccines", "pets_tags")
     }
 
     @MockBean
@@ -62,17 +66,19 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
         """.trimIndent()
     ).fetch().first().map { it.getOrDefault("table_name", "") == name }.switchIfEmpty(false.toMono())
 
-    @Test
-    fun `we should have the tables created`() {
-        StepVerifier
-            .create(checkIfTableExist("pets"))
-            .expectSubscription()
-            .expectNext(true)
-            .verifyComplete()
+    @TestFactory
+    fun `we should have the tables created`() = TABLES_TO_CHECK.map {
+        DynamicTest.dynamicTest("we should have the table '$it' created") {
+            StepVerifier
+                .create(checkIfTableExist(it))
+                .expectSubscription()
+                .expectNext(true)
+                .verifyComplete()
+        }
     }
 
     @Test
-    fun `we should not have a no existing tables created`() {
+    fun `we should not have a no existing table created`() {
         StepVerifier
             .create(checkIfTableExist("no_pets"))
             .expectSubscription()
