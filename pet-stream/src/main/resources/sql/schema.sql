@@ -26,12 +26,12 @@ create table IF NOT EXISTS pets
         constraint pets_pk
             primary key,
     name char(20) not null,
-    category integer not null
-        constraint pets_categories_id_fk
-            references categories,
-    breed integer not null
-        constraint pets_breeds_id_fk
-            references breeds,
+--     category integer not null
+--         constraint pets_categories_id_fk
+--             references categories,
+--     breed integer not null
+--         constraint pets_breeds_id_fk
+--             references breeds,
     dob timestamp not null,
     creation timestamp default now() not null
 );
