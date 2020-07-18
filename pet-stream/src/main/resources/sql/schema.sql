@@ -25,7 +25,7 @@ create table IF NOT EXISTS pets
     id char(36) not null
         constraint pets_pk
             primary key,
-    name char(20) not null,
+    name varchar(20) not null,
 --     category integer not null
 --         constraint pets_categories_id_fk
 --             references categories,

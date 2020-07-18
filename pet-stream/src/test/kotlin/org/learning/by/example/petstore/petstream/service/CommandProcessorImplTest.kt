@@ -8,10 +8,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.petstream.listener.StreamListener
+import org.learning.by.example.petstore.petstream.respository.PetRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
-import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
@@ -21,13 +21,12 @@ import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
 import java.time.Instant
-import java.util.UUID
 
 @SpringBootTest
 @Testcontainers
 internal class CommandProcessorImplTest(
     @Autowired val commandProcessorImpl: CommandProcessorImpl,
-    @Autowired val databaseClient: DatabaseClient
+    @Autowired val petRepository: PetRepository
 ) {
     companion object {
         @Container
@@ -73,22 +72,13 @@ internal class CommandProcessorImplTest(
             .expectSubscription()
             .verifyComplete()
 
-        StepVerifier.create(checkIfPetExists(petCommand.id))
+        StepVerifier.create(petRepository.findById(petCommand.id.toString()))
             .expectSubscription()
             .consumeNextWith {
-                assertThat(it).withFailMessage("Pet is not found in the database").isTrue()
+                assertThat(it._id).isEqualTo(petCommand.id.toString())
+                assertThat(it.name).isEqualTo(petCommand.get("name"))
+                assertThat(it.dob).isEqualTo(petCommand.get<Instant>("dob"))
             }
             .verifyComplete()
     }
-
-    fun checkIfPetExists(uuid: UUID): Mono<Boolean> = databaseClient.execute(
-        """
-           SELECT
-             id
-           FROM
-             pets
-           WHERE
-             id = '$uuid'
-        """.trimIndent()
-    ).fetch().first().map { it.getOrDefault("id", "") == uuid.toString() }.switchIfEmpty(false.toMono())
 }

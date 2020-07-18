@@ -9,7 +9,7 @@ import reactor.core.publisher.Mono
 @Service
 class CommandProcessorImpl(val petRepository: PetRepository) : CommandProcessor {
     override fun process(command: Mono<Command>) = command.flatMap {
-        petRepository.save(Pet(it.id.toString(), it.commandName, it.timestamp)).flatMap {
+        petRepository.save(Pet(it.id.toString(), it.get("name"), it.get("dob"))).flatMap {
             Mono.empty<Void>()
         }
     }
