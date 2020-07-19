@@ -8,16 +8,19 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.petstream.listener.StreamListener
-import org.learning.by.example.petstore.petstream.respository.PetRepository
+import org.learning.by.example.petstore.petstream.model.Pet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.data.r2dbc.core.DatabaseClient
+import org.springframework.data.r2dbc.core.from
+import org.springframework.data.r2dbc.core.isEquals
+import org.springframework.data.r2dbc.query.Criteria.where
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import reactor.test.StepVerifier
 import java.time.Instant
@@ -26,7 +29,7 @@ import java.time.Instant
 @Testcontainers
 internal class CommandProcessorImplTest(
     @Autowired val commandProcessorImpl: CommandProcessorImpl,
-    @Autowired val petRepository: PetRepository
+    @Autowired val databaseClient: DatabaseClient
 ) {
     companion object {
         @Container
@@ -66,19 +69,22 @@ internal class CommandProcessorImplTest(
             "dob" value Instant.now()
             "tags" values listOf("tag1")
         }
-        val mono: Mono<Void> = commandProcessorImpl.process(petCommand.toMono())
 
-        StepVerifier.create(mono)
+        StepVerifier.create(commandProcessorImpl.process(petCommand.toMono()))
             .expectSubscription()
             .verifyComplete()
 
-        StepVerifier.create(petRepository.findById(petCommand.id.toString()))
+        StepVerifier.create(
+            databaseClient
+                .select().from<Pet>()
+                .matching(where("id").isEquals(petCommand.id.toString()))
+                .fetch().one()
+        )
             .expectSubscription()
             .consumeNextWith {
-                assertThat(it._id).isEqualTo(petCommand.id.toString())
+                assertThat(it.id).isEqualTo(petCommand.id.toString())
                 assertThat(it.name).isEqualTo(petCommand.get("name"))
                 assertThat(it.dob).isEqualTo(petCommand.get<Instant>("dob"))
-            }
-            .verifyComplete()
+            }.verifyComplete()
     }
 }
