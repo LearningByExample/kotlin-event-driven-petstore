@@ -9,5 +9,6 @@ data class Pet(
     @field:Id
     val id: String,
     val name: String,
-    val dob: Instant
+    val dob: Instant,
+    val category: Int
 )
