@@ -48,7 +48,7 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
         }
 
         val TABLES_TO_CHECK = arrayOf("categories", "breeds", "pets", "vaccines", "tags", "pets_vaccines", "pets_tags")
-        val ROUTINES_TO_CHECK = arrayOf("insert_category", "insert_breed")
+        val ROUTINES_TO_CHECK = arrayOf("insert_category", "insert_breed", "insert_vaccine", "insert_tag")
     }
 
     @MockBean

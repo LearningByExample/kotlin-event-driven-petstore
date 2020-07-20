@@ -142,3 +142,49 @@ BEGIN
 
 END;
 $$;;
+
+create or replace function insert_vaccine(IN vaccine_name varchar(15), OUT vaccine_id int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    INSERT
+    INTO vaccines (name)
+    SELECT vaccine_name
+    WHERE vaccine_name NOT IN
+    (
+        SELECT name
+        FROM vaccines
+    );
+
+    SELECT id into vaccine_id
+    FROM
+        vaccines
+    WHERE
+        name = vaccine_name;
+
+END;
+$$;;
+
+create or replace function insert_tag(IN tag_name varchar(15), OUT tag_id int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    INSERT
+    INTO tags (name)
+    SELECT tag_name
+    WHERE tag_name NOT IN
+    (
+        SELECT name
+        FROM tags
+    );
+
+    SELECT id into tag_id
+    FROM
+        tags
+    WHERE
+        name = tag_name;
+
+END;
+$$;;
