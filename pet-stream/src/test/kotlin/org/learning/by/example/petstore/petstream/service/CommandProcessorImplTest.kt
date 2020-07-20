@@ -104,6 +104,17 @@ internal class CommandProcessorImplTest(
         }.verifyComplete()
     }
 
+    fun verifyBreedIsCorrect(id: Int, breed: String) {
+        StepVerifier.create(
+            databaseClient.select().from("breeds")
+                .project("name")
+                .matching(where("id").isEquals(id))
+                .fetch().one()
+        ).expectSubscription().consumeNextWith {
+            assertThat(it["name"]).isEqualTo(breed)
+        }.verifyComplete()
+    }
+
     @Test
     fun `we should create categories`() {
         var firstCategory = -1
@@ -132,6 +143,38 @@ internal class CommandProcessorImplTest(
                 assertThat(it).isNotZero()
                 assertThat(it).isEqualTo(firstCategory)
                 verifyCategoryIsCorrect(it, "one")
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `we should create breeds`() {
+        var firstBreed = -1
+
+        StepVerifier.create(commandProcessorImpl.insertBreed("one"))
+            .expectSubscription()
+            .consumeNextWith {
+                assertThat(it).isNotZero()
+                firstBreed = it
+                verifyBreedIsCorrect(it, "one")
+            }
+            .verifyComplete()
+
+        StepVerifier.create(commandProcessorImpl.insertBreed("two"))
+            .expectSubscription()
+            .consumeNextWith {
+                assertThat(it).isNotZero()
+                assertThat(it).isNotEqualTo(firstBreed)
+                verifyBreedIsCorrect(it, "two")
+            }
+            .verifyComplete()
+
+        StepVerifier.create(commandProcessorImpl.insertBreed("one"))
+            .expectSubscription()
+            .consumeNextWith {
+                assertThat(it).isNotZero()
+                assertThat(it).isEqualTo(firstBreed)
+                verifyBreedIsCorrect(it, "one")
             }
             .verifyComplete()
     }

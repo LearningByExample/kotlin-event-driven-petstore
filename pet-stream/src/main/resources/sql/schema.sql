@@ -29,9 +29,9 @@ create table IF NOT EXISTS pets
      category integer not null
          constraint pets_categories_id_fk
              references categories,
---     breed integer not null
---         constraint pets_breeds_id_fk
---             references breeds,
+     breed integer not null
+         constraint pets_breeds_id_fk
+             references breeds,
     dob timestamp not null,
     creation timestamp default now() not null
 );;
@@ -116,6 +116,29 @@ BEGIN
         categories
     WHERE
         name = category_name;
+
+END;
+$$;;
+
+create or replace function insert_breed(IN breed_name varchar(15), OUT breed_id int)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+
+    INSERT
+    INTO breeds (name)
+    SELECT breed_name
+    WHERE breed_name NOT IN
+    (
+        SELECT name
+        FROM breeds
+    );
+
+    SELECT id into breed_id
+    FROM
+        breeds
+    WHERE
+        name = breed_name;
 
 END;
 $$;;
