@@ -11,12 +11,10 @@ import org.junit.jupiter.api.Test
 import org.learning.by.example.petstore.command.Command
 import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.petstream.listener.StreamListener
-import org.learning.by.example.petstore.petstream.model.Pet
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.r2dbc.core.DatabaseClient
-import org.springframework.data.r2dbc.core.from
 import org.springframework.data.r2dbc.core.isEquals
 import org.springframework.data.r2dbc.query.Criteria.where
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -25,7 +23,7 @@ import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.test.StepVerifier
-import java.time.Instant
+import java.time.LocalDateTime
 
 @SpringBootTest
 @Testcontainers
@@ -68,7 +66,7 @@ internal class CommandProcessorImplTest(
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now()
+            "dob" value LocalDateTime.now()
             "tags" values listOf("tag1")
         }
 
@@ -82,15 +80,16 @@ internal class CommandProcessorImplTest(
     fun verifyPetIsSaved(cmd: Command) {
         StepVerifier.create(
             databaseClient
-                .select().from<Pet>()
+                .select().from("pets")
+                .project("id", "name", "dob", "category")
                 .matching(where("id").isEquals(cmd.id.toString()))
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
-            assertThat(it.id).isEqualTo(cmd.id.toString())
-            assertThat(it.name).isEqualTo(cmd.get("name"))
-            assertThat(it.dob).isEqualTo(cmd.get<Instant>("dob"))
-            assertThat(it.category).isNotZero()
-            verifyCategoryIsCorrect(it.category, cmd.get("category"))
+            assertThat(it["id"]).isEqualTo(cmd.id.toString())
+            assertThat(it["name"]).isEqualTo(cmd.get("name"))
+            assertThat(it["dob"]).isEqualTo(cmd.get<LocalDateTime>("dob"))
+            assertThat(it["category"] as Int).isNotZero()
+            verifyCategoryIsCorrect(it["category"] as Int, cmd.get("category"))
         }.verifyComplete()
     }
 
