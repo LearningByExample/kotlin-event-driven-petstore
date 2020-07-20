@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package org.learning.by.example.petstore.petstream.configuration
 
 import com.nhaarman.mockitokotlin2.any
@@ -12,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.r2dbc.core.DatabaseClient
+import org.springframework.data.r2dbc.core.isEquals
+import org.springframework.data.r2dbc.query.Criteria.where
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
@@ -44,6 +48,7 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
         }
 
         val TABLES_TO_CHECK = arrayOf("categories", "breeds", "pets", "vaccines", "tags", "pets_vaccines", "pets_tags")
+        val ROUTINES_TO_CHECK = arrayOf("insert_category", "insert_breed")
     }
 
     @MockBean
@@ -54,17 +59,21 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
         doNothing().whenever(streamListener).onApplicationEvent(any())
     }
 
-    fun checkIfTableExist(name: String): Mono<Boolean> = databaseClient.execute(
-        """
-           SELECT
-             table_name
-           FROM
-             information_schema.tables
-           WHERE
-             table_name = '$name'
-             AND table_schema = 'public'
-        """.trimIndent()
-    ).fetch().first().map { it.getOrDefault("table_name", "") == name }.switchIfEmpty(false.toMono())
+    fun checkIfTableExist(name: String): Mono<Boolean> = databaseClient.select()
+        .from("information_schema.tables")
+        .project("table_name")
+        .matching(
+            where("table_name").isEquals(name).and("table_schema").isEquals("public")
+        )
+        .fetch().one().map { it.getOrDefault("table_name", "") == name }.switchIfEmpty(false.toMono())
+
+    fun checkIfRoutineExist(name: String): Mono<Boolean> = databaseClient.select()
+        .from("information_schema.routines")
+        .project("routine_name")
+        .matching(
+            where("routine_name").isEquals(name).and("routine_schema").isEquals("public")
+        )
+        .fetch().one().map { it.getOrDefault("routine_name", "") == name }.switchIfEmpty(false.toMono())
 
     @TestFactory
     fun `we should have the tables created`() = TABLES_TO_CHECK.map {
@@ -81,6 +90,26 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
     fun `we should not have a no existing table created`() {
         StepVerifier
             .create(checkIfTableExist("no_pets"))
+            .expectSubscription()
+            .expectNext(false)
+            .verifyComplete()
+    }
+
+    @TestFactory
+    fun `we should have the routines created`() = ROUTINES_TO_CHECK.map {
+        DynamicTest.dynamicTest("we should have the routine '$it' created") {
+            StepVerifier
+                .create(checkIfRoutineExist(it))
+                .expectSubscription()
+                .expectNext(true)
+                .verifyComplete()
+        }
+    }
+
+    @Test
+    fun `we should not have a no existing routine created`() {
+        StepVerifier
+            .create(checkIfRoutineExist("no_routine"))
             .expectSubscription()
             .expectNext(false)
             .verifyComplete()
