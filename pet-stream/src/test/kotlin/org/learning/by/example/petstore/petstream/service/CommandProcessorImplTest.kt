@@ -81,7 +81,7 @@ internal class CommandProcessorImplTest(
         StepVerifier.create(
             databaseClient
                 .select().from("pets")
-                .project("id", "name", "dob", "category")
+                .project("id", "name", "dob", "category", "breed")
                 .matching(where("id").isEquals(cmd.id.toString()))
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
@@ -90,6 +90,7 @@ internal class CommandProcessorImplTest(
             assertThat(it["dob"]).isEqualTo(cmd.get<LocalDateTime>("dob"))
             assertThat(it["category"] as Int).isNotZero()
             verifyCategoryIsCorrect(it["category"] as Int, cmd.get("category"))
+            verifyBreedIsCorrect(it["breed"] as Int, cmd.get("breed"))
         }.verifyComplete()
     }
 
@@ -116,7 +117,7 @@ internal class CommandProcessorImplTest(
     }
 
     @Test
-    fun `we should create categories`() {
+    fun `we should insert categories and keep already inserted`() {
         var firstCategory = -1
 
         StepVerifier.create(commandProcessorImpl.insertCategory("one"))
@@ -148,7 +149,7 @@ internal class CommandProcessorImplTest(
     }
 
     @Test
-    fun `we should create breeds`() {
+    fun `we should insert breeds and keep already inserted`() {
         var firstBreed = -1
 
         StepVerifier.create(commandProcessorImpl.insertBreed("one"))
@@ -177,5 +178,29 @@ internal class CommandProcessorImplTest(
                 verifyBreedIsCorrect(it, "one")
             }
             .verifyComplete()
+    }
+
+    @Test
+    fun `we should insert pets`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1")
+        }
+
+        val category = cmd.get<String>("category")
+        val categoryId = commandProcessorImpl.insertCategory(category).block()!!
+
+        val breed = cmd.get<String>("breed")
+        val breedId = commandProcessorImpl.insertBreed(breed).block()!!
+
+        StepVerifier.create(commandProcessorImpl.insertPet(cmd, categoryId, breedId))
+            .expectSubscription()
+            .verifyComplete()
+
+        verifyPetIsSaved(cmd)
     }
 }
