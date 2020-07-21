@@ -76,9 +76,7 @@ internal class CommandProcessorImplTest(
             .verifyComplete()
 
         verifyPetIsSaved(cmd)
-        cmd.getList<String>("tags").forEach {
-            verifyPetHasTag(cmd.id, it)
-        }
+        verifyPetHasTags(cmd.id, cmd.getList("tags"))
     }
 
     fun verifyPetIsSaved(cmd: Command) {
@@ -154,6 +152,12 @@ internal class CommandProcessorImplTest(
         ).expectSubscription().consumeNextWith {
             assertThat(it["name"]).isEqualTo(tag)
         }.verifyComplete()
+    }
+
+    fun verifyPetHasTags(id: UUID, tags: List<String>) {
+        tags.forEach {
+            verifyPetHasTag(id, it)
+        }
     }
 
     @Test
@@ -314,8 +318,6 @@ internal class CommandProcessorImplTest(
         StepVerifier.create(commandProcessorImpl.addTagsToPet(cmd.id, tags))
             .expectSubscription()
             .verifyComplete()
-        tags.forEach {
-            verifyPetHasTag(cmd.id, it)
-        }
+        verifyPetHasTags(cmd.id, tags)
     }
 }
