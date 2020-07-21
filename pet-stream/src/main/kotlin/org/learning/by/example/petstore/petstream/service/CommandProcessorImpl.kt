@@ -3,12 +3,18 @@ package org.learning.by.example.petstore.petstream.service
 import org.learning.by.example.petstore.command.Command
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.switchIfEmpty
+import reactor.kotlin.core.publisher.toFlux
+import java.util.UUID
 
 @Service
 class CommandProcessorImpl(val databaseClient: DatabaseClient) : CommandProcessor {
     override fun process(cmd: Command) = insertCategory(cmd.get("category")).flatMap { category ->
         insertBreed(cmd.get("breed")).flatMap { breed ->
             insertPet(cmd, category, breed)
+        }.switchIfEmpty {
+            addTagsToPet(cmd.id, cmd.getList("tags"))
         }
     }
 
@@ -25,4 +31,20 @@ class CommandProcessorImpl(val databaseClient: DatabaseClient) : CommandProcesso
         .value("category", categoryId)
         .value("breed", breedId)
         .then()
+
+    fun insertTag(name: String) = databaseClient.execute("select insert_tag('$name')")
+        .fetch().one().map { it["insert_tag"] as Int }
+
+    fun addTagToPet(petId: UUID, tag: String) = insertTag(tag).flatMap {
+        databaseClient.insert().into("pets_tags")
+            .value("id_pet", petId.toString())
+            .value("id_tag", it)
+            .then()
+    }
+
+    fun addTagsToPet(petId: UUID, tags: List<String>) = tags.toFlux().flatMap {
+        addTagToPet(petId, it)
+    }.collectList().flatMap {
+        Mono.empty<Void>()
+    }
 }

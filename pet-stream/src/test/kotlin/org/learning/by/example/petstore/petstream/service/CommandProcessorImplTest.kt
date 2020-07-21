@@ -24,6 +24,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.test.StepVerifier
 import java.time.LocalDateTime
+import java.util.UUID
 
 @SpringBootTest
 @Testcontainers
@@ -67,7 +68,7 @@ internal class CommandProcessorImplTest(
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
             "dob" value LocalDateTime.now()
-            "tags" values listOf("tag1")
+            "tags" values listOf("tag1", "tag2", "tag3")
         }
 
         StepVerifier.create(commandProcessorImpl.process(cmd))
@@ -75,6 +76,9 @@ internal class CommandProcessorImplTest(
             .verifyComplete()
 
         verifyPetIsSaved(cmd)
+        cmd.getList<String>("tags").forEach {
+            verifyPetHasTag(cmd.id, it)
+        }
     }
 
     fun verifyPetIsSaved(cmd: Command) {
@@ -113,6 +117,42 @@ internal class CommandProcessorImplTest(
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
             assertThat(it["name"]).isEqualTo(breed)
+        }.verifyComplete()
+    }
+
+    fun verifyTagIsCorrect(id: Int, tag: String) {
+        StepVerifier.create(
+            databaseClient.select().from("tags")
+                .project("name")
+                .matching(where("id").isEquals(id))
+                .fetch().one()
+        ).expectSubscription().consumeNextWith {
+            assertThat(it["name"]).isEqualTo(tag)
+        }.verifyComplete()
+    }
+
+    fun verifyPetHasTag(id: UUID, tag: String) {
+        StepVerifier.create(
+            databaseClient
+                .execute(
+                    """
+                    SELECT
+                        name
+                    FROM
+                        tags, pets_tags
+                    WHERE
+                        pets_tags.id_pet = :id
+                    AND
+                        pets_tags.id_tag = tags.id
+                    AND
+                        tags.name = :name
+                """
+                )
+                .bind("id", id.toString())
+                .bind("name", tag)
+                .fetch().one()
+        ).expectSubscription().consumeNextWith {
+            assertThat(it["name"]).isEqualTo(tag)
         }.verifyComplete()
     }
 
@@ -191,16 +231,91 @@ internal class CommandProcessorImplTest(
             "tags" values listOf("tag1")
         }
 
-        val category = cmd.get<String>("category")
-        val categoryId = commandProcessorImpl.insertCategory(category).block()!!
-
-        val breed = cmd.get<String>("breed")
-        val breedId = commandProcessorImpl.insertBreed(breed).block()!!
+        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
+        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
 
         StepVerifier.create(commandProcessorImpl.insertPet(cmd, categoryId, breedId))
             .expectSubscription()
             .verifyComplete()
 
         verifyPetIsSaved(cmd)
+    }
+
+    @Test
+    fun `we should insert tags and keep already inserted`() {
+        var firstTag = -1
+
+        StepVerifier.create(commandProcessorImpl.insertTag("one"))
+            .expectSubscription()
+            .consumeNextWith {
+                assertThat(it).isNotZero()
+                firstTag = it
+                verifyTagIsCorrect(it, "one")
+            }
+            .verifyComplete()
+
+        StepVerifier.create(commandProcessorImpl.insertTag("two"))
+            .expectSubscription()
+            .consumeNextWith {
+                assertThat(it).isNotZero()
+                assertThat(it).isNotEqualTo(firstTag)
+                verifyTagIsCorrect(it, "two")
+            }
+            .verifyComplete()
+
+        StepVerifier.create(commandProcessorImpl.insertTag("one"))
+            .expectSubscription()
+            .consumeNextWith {
+                assertThat(it).isNotZero()
+                assertThat(it).isEqualTo(firstTag)
+                verifyTagIsCorrect(it, "one")
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `we should add a tag to a pet`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1")
+        }
+
+        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
+        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
+        commandProcessorImpl.insertPet(cmd, categoryId, breedId).block()
+
+        StepVerifier.create(commandProcessorImpl.addTagToPet(cmd.id, "tag1"))
+            .expectSubscription()
+            .verifyComplete()
+
+        verifyPetHasTag(cmd.id, "tag1")
+    }
+
+    @Test
+    fun `we should add tags to a pet`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
+        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
+        commandProcessorImpl.insertPet(cmd, categoryId, breedId).block()
+
+        val tags = cmd.getList<String>("tags")
+        StepVerifier.create(commandProcessorImpl.addTagsToPet(cmd.id, tags))
+            .expectSubscription()
+            .verifyComplete()
+        tags.forEach {
+            verifyPetHasTag(cmd.id, it)
+        }
     }
 }
