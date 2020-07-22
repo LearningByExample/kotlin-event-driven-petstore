@@ -9,7 +9,7 @@ import reactor.kotlin.core.publisher.toFlux
 import java.util.UUID
 
 @Service
-class CommandProcessorImpl(val databaseClient: DatabaseClient) : CommandProcessor {
+class CreateCommandProcessor(val databaseClient: DatabaseClient) : CommandProcessor {
     override fun process(cmd: Command) = insertCategory(cmd.get("category")).flatMap { category ->
         insertBreed(cmd.get("breed")).flatMap { breed ->
             insertPet(cmd, category, breed)
@@ -22,6 +22,11 @@ class CommandProcessorImpl(val databaseClient: DatabaseClient) : CommandProcesso
             addVaccinesToPet(cmd.id, cmd.getList("vaccines"))
         }
     }
+
+    override fun getCommandName() = "pet_create"
+
+    override fun validate(cmd: Command) = cmd.contains("name") && cmd.contains("dob") && cmd.contains("category") &&
+        cmd.contains("breed") && cmd.contains("tags") && cmd.contains("vaccines")
 
     fun insertCategory(name: String) = databaseClient.execute("select insert_category('$name')")
         .fetch().one().map { it["insert_category"] as Int }

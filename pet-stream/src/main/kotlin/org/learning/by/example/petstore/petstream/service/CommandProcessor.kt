@@ -5,4 +5,6 @@ import reactor.core.publisher.Mono
 
 interface CommandProcessor {
     fun process(cmd: Command): Mono<Void>
+    fun getCommandName(): String
+    fun validate(cmd: Command): Boolean
 }

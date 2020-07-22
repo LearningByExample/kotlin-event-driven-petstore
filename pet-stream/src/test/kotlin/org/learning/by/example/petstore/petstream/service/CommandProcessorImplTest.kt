@@ -7,7 +7,9 @@ import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 import org.learning.by.example.petstore.command.Command
 import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.petstream.listener.StreamListener
@@ -29,7 +31,7 @@ import java.util.UUID
 @SpringBootTest
 @Testcontainers
 internal class CommandProcessorImplTest(
-    @Autowired val commandProcessorImpl: CommandProcessorImpl,
+    @Autowired val createCommandProcessor: CreateCommandProcessor,
     @Autowired val databaseClient: DatabaseClient
 ) {
     companion object {
@@ -71,7 +73,7 @@ internal class CommandProcessorImplTest(
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(commandProcessorImpl.process(cmd))
+        StepVerifier.create(createCommandProcessor.process(cmd))
             .expectSubscription()
             .verifyComplete()
 
@@ -91,7 +93,7 @@ internal class CommandProcessorImplTest(
             "tags" values listOf()
         }
 
-        StepVerifier.create(commandProcessorImpl.process(cmd))
+        StepVerifier.create(createCommandProcessor.process(cmd))
             .expectSubscription()
             .verifyComplete()
 
@@ -110,7 +112,7 @@ internal class CommandProcessorImplTest(
             "dob" value LocalDateTime.now()
         }
 
-        StepVerifier.create(commandProcessorImpl.process(cmd))
+        StepVerifier.create(createCommandProcessor.process(cmd))
             .expectSubscription()
             .verifyComplete()
 
@@ -129,7 +131,7 @@ internal class CommandProcessorImplTest(
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(commandProcessorImpl.process(cmd))
+        StepVerifier.create(createCommandProcessor.process(cmd))
             .expectSubscription()
             .verifyComplete()
 
@@ -254,7 +256,7 @@ internal class CommandProcessorImplTest(
     fun `we should insert categories and keep already inserted`() {
         var firstCategory = -1
 
-        StepVerifier.create(commandProcessorImpl.insertCategory("one"))
+        StepVerifier.create(createCommandProcessor.insertCategory("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -263,7 +265,7 @@ internal class CommandProcessorImplTest(
             }
             .verifyComplete()
 
-        StepVerifier.create(commandProcessorImpl.insertCategory("two"))
+        StepVerifier.create(createCommandProcessor.insertCategory("two"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -272,7 +274,7 @@ internal class CommandProcessorImplTest(
             }
             .verifyComplete()
 
-        StepVerifier.create(commandProcessorImpl.insertCategory("one"))
+        StepVerifier.create(createCommandProcessor.insertCategory("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -286,7 +288,7 @@ internal class CommandProcessorImplTest(
     fun `we should insert breeds and keep already inserted`() {
         var firstBreed = -1
 
-        StepVerifier.create(commandProcessorImpl.insertBreed("one"))
+        StepVerifier.create(createCommandProcessor.insertBreed("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -295,7 +297,7 @@ internal class CommandProcessorImplTest(
             }
             .verifyComplete()
 
-        StepVerifier.create(commandProcessorImpl.insertBreed("two"))
+        StepVerifier.create(createCommandProcessor.insertBreed("two"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -304,7 +306,7 @@ internal class CommandProcessorImplTest(
             }
             .verifyComplete()
 
-        StepVerifier.create(commandProcessorImpl.insertBreed("one"))
+        StepVerifier.create(createCommandProcessor.insertBreed("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -325,10 +327,10 @@ internal class CommandProcessorImplTest(
             "tags" values listOf("tag1")
         }
 
-        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
-        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
+        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
 
-        StepVerifier.create(commandProcessorImpl.insertPet(cmd, categoryId, breedId))
+        StepVerifier.create(createCommandProcessor.insertPet(cmd, categoryId, breedId))
             .expectSubscription()
             .verifyComplete()
 
@@ -339,7 +341,7 @@ internal class CommandProcessorImplTest(
     fun `we should insert tags and keep already inserted`() {
         var firstTag = -1
 
-        StepVerifier.create(commandProcessorImpl.insertTag("one"))
+        StepVerifier.create(createCommandProcessor.insertTag("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -348,7 +350,7 @@ internal class CommandProcessorImplTest(
             }
             .verifyComplete()
 
-        StepVerifier.create(commandProcessorImpl.insertTag("two"))
+        StepVerifier.create(createCommandProcessor.insertTag("two"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -357,7 +359,7 @@ internal class CommandProcessorImplTest(
             }
             .verifyComplete()
 
-        StepVerifier.create(commandProcessorImpl.insertTag("one"))
+        StepVerifier.create(createCommandProcessor.insertTag("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -378,11 +380,11 @@ internal class CommandProcessorImplTest(
             "tags" values listOf("tag1")
         }
 
-        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
-        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
-        commandProcessorImpl.insertPet(cmd, categoryId, breedId).block()
+        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        createCommandProcessor.insertPet(cmd, categoryId, breedId).block()
 
-        StepVerifier.create(commandProcessorImpl.addTagToPet(cmd.id, "tag1"))
+        StepVerifier.create(createCommandProcessor.addTagToPet(cmd.id, "tag1"))
             .expectSubscription()
             .verifyComplete()
 
@@ -400,12 +402,12 @@ internal class CommandProcessorImplTest(
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
-        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
-        commandProcessorImpl.insertPet(cmd, categoryId, breedId).block()
+        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        createCommandProcessor.insertPet(cmd, categoryId, breedId).block()
 
         val tags = cmd.getList<String>("tags")
-        StepVerifier.create(commandProcessorImpl.addTagsToPet(cmd.id, tags))
+        StepVerifier.create(createCommandProcessor.addTagsToPet(cmd.id, tags))
             .expectSubscription()
             .verifyComplete()
         verifyPetHasTags(cmd.id, tags)
@@ -422,11 +424,11 @@ internal class CommandProcessorImplTest(
             "tags" values listOf("tag1")
         }
 
-        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
-        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
-        commandProcessorImpl.insertPet(cmd, categoryId, breedId).block()
+        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        createCommandProcessor.insertPet(cmd, categoryId, breedId).block()
 
-        StepVerifier.create(commandProcessorImpl.addVaccineToPet(cmd.id, "vaccine1"))
+        StepVerifier.create(createCommandProcessor.addVaccineToPet(cmd.id, "vaccine1"))
             .expectSubscription()
             .verifyComplete()
 
@@ -444,14 +446,104 @@ internal class CommandProcessorImplTest(
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
-        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
-        commandProcessorImpl.insertPet(cmd, categoryId, breedId).block()
+        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        createCommandProcessor.insertPet(cmd, categoryId, breedId).block()
 
         val vaccines = cmd.getList<String>("vaccines")
-        StepVerifier.create(commandProcessorImpl.addVaccinesToPet(cmd.id, vaccines))
+        StepVerifier.create(createCommandProcessor.addVaccinesToPet(cmd.id, vaccines))
             .expectSubscription()
             .verifyComplete()
         verifyPetHasVaccines(cmd.id, vaccines)
+    }
+
+    data class ValidationCase(val case: String, val cmd: Command, val expect: Boolean)
+
+    val validationCases = listOf(
+        ValidationCase(
+            case = "all details correct should return true",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value LocalDateTime.now()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            },
+            expect = true
+        ),
+        ValidationCase(
+            case = "missing name should return false",
+            cmd = command("pet_create") {
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value LocalDateTime.now()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            },
+            expect = false
+        ),
+        ValidationCase(
+            case = "missing category should return false",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value LocalDateTime.now()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            },
+            expect = false
+        ),
+        ValidationCase(
+            case = "missing breed should return false",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value LocalDateTime.now()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            },
+            expect = false
+        ),
+        ValidationCase(
+            case = "missing vaccines should return false",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value "breed"
+                "dob" value LocalDateTime.now()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            },
+            expect = false
+        ),
+        ValidationCase(
+            case = "missing dob should return false",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "tags" values listOf("tag1", "tag2", "tag3")
+            },
+            expect = false
+        ),
+        ValidationCase(
+            case = "missing tags should return true",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value LocalDateTime.now()
+            },
+            expect = false
+        )
+    )
+
+    @TestFactory
+    fun `we should validate create pet commands`() = validationCases.map {
+        DynamicTest.dynamicTest(it.case) {
+            assertThat(createCommandProcessor.validate(it.cmd)).isEqualTo(it.expect)
+        }
     }
 }
