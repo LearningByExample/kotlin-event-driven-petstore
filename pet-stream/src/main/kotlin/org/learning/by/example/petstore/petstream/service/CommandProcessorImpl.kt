@@ -14,7 +14,10 @@ class CommandProcessorImpl(val databaseClient: DatabaseClient) : CommandProcesso
         insertBreed(cmd.get("breed")).flatMap { breed ->
             insertPet(cmd, category, breed)
         }.switchIfEmpty {
-            addTagsToPet(cmd.id, cmd.getList("tags"))
+            if (cmd.contains("tags"))
+                addTagsToPet(cmd.id, cmd.getList("tags"))
+            else
+                Mono.empty()
         }.switchIfEmpty {
             addVaccinesToPet(cmd.id, cmd.getList("vaccines"))
         }

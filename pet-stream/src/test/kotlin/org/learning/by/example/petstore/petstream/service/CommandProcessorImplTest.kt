@@ -81,7 +81,7 @@ internal class CommandProcessorImplTest(
     }
 
     @Test
-    fun `should process create command without tags and save a pet in the database`() {
+    fun `should process create command with empty tags and save a pet in the database`() {
         val cmd = command("pet_create") {
             "name" value "name"
             "category" value "category"
@@ -101,7 +101,25 @@ internal class CommandProcessorImplTest(
     }
 
     @Test
-    fun `should process create command without vaccines and save a pet in the database`() {
+    fun `should process create command with not tags and save a pet in the database`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+        }
+
+        StepVerifier.create(commandProcessorImpl.process(cmd))
+            .expectSubscription()
+            .verifyComplete()
+
+        verifyPetIsSaved(cmd)
+        verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
+    }
+
+    @Test
+    fun `should process create command with empty vaccines and save a pet in the database`() {
         val cmd = command("pet_create") {
             "name" value "name"
             "category" value "category"
