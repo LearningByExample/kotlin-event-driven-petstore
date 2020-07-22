@@ -15,6 +15,8 @@ class CommandProcessorImpl(val databaseClient: DatabaseClient) : CommandProcesso
             insertPet(cmd, category, breed)
         }.switchIfEmpty {
             addTagsToPet(cmd.id, cmd.getList("tags"))
+        }.switchIfEmpty {
+            addVaccinesToPet(cmd.id, cmd.getList("vaccines"))
         }
     }
 
@@ -44,6 +46,22 @@ class CommandProcessorImpl(val databaseClient: DatabaseClient) : CommandProcesso
 
     fun addTagsToPet(petId: UUID, tags: List<String>) = tags.toFlux().flatMap {
         addTagToPet(petId, it)
+    }.collectList().flatMap {
+        Mono.empty<Void>()
+    }
+
+    fun insertVaccine(name: String) = databaseClient.execute("select insert_vaccine('$name')")
+        .fetch().one().map { it["insert_vaccine"] as Int }
+
+    fun addVaccineToPet(petId: UUID, vaccine: String) = insertVaccine(vaccine).flatMap {
+        databaseClient.insert().into("pets_vaccines")
+            .value("id_pet", petId.toString())
+            .value("id_vaccine", it)
+            .then()
+    }
+
+    fun addVaccinesToPet(petId: UUID, vaccines: List<String>) = vaccines.toFlux().flatMap {
+        addVaccineToPet(petId, it)
     }.collectList().flatMap {
         Mono.empty<Void>()
     }

@@ -77,6 +77,7 @@ internal class CommandProcessorImplTest(
 
         verifyPetIsSaved(cmd)
         verifyPetHasTags(cmd.id, cmd.getList("tags"))
+        verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
     }
 
     fun verifyPetIsSaved(cmd: Command) {
@@ -157,6 +158,37 @@ internal class CommandProcessorImplTest(
     fun verifyPetHasTags(id: UUID, tags: List<String>) {
         tags.forEach {
             verifyPetHasTag(id, it)
+        }
+    }
+
+    fun verifyPetHasVaccine(id: UUID, vaccine: String) {
+        StepVerifier.create(
+            databaseClient
+                .execute(
+                    """
+                    SELECT
+                        name
+                    FROM
+                        vaccines, pets_vaccines
+                    WHERE
+                        pets_vaccines.id_pet = :id
+                    AND
+                        pets_vaccines.id_vaccine = vaccines.id
+                    AND
+                        vaccines.name = :name
+                """
+                )
+                .bind("id", id.toString())
+                .bind("name", vaccine)
+                .fetch().one()
+        ).expectSubscription().consumeNextWith {
+            assertThat(it["name"]).isEqualTo(vaccine)
+        }.verifyComplete()
+    }
+
+    fun verifyPetHasVaccines(id: UUID, vaccines: List<String>) {
+        vaccines.forEach {
+            verifyPetHasVaccine(id, it)
         }
     }
 
@@ -319,5 +351,49 @@ internal class CommandProcessorImplTest(
             .expectSubscription()
             .verifyComplete()
         verifyPetHasTags(cmd.id, tags)
+    }
+
+    @Test
+    fun `we should add a vaccine to a pet`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1")
+        }
+
+        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
+        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
+        commandProcessorImpl.insertPet(cmd, categoryId, breedId).block()
+
+        StepVerifier.create(commandProcessorImpl.addVaccineToPet(cmd.id, "vaccine1"))
+            .expectSubscription()
+            .verifyComplete()
+
+        verifyPetHasVaccine(cmd.id, "vaccine1")
+    }
+
+    @Test
+    fun `we should add vaccines to a pet`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        val categoryId = commandProcessorImpl.insertCategory(cmd.get("category")).block()!!
+        val breedId = commandProcessorImpl.insertBreed(cmd.get("breed")).block()!!
+        commandProcessorImpl.insertPet(cmd, categoryId, breedId).block()
+
+        val vaccines = cmd.getList<String>("vaccines")
+        StepVerifier.create(commandProcessorImpl.addVaccinesToPet(cmd.id, vaccines))
+            .expectSubscription()
+            .verifyComplete()
+        verifyPetHasVaccines(cmd.id, vaccines)
     }
 }
