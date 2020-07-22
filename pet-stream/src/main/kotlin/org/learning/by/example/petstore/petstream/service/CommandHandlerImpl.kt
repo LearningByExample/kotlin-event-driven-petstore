@@ -16,7 +16,7 @@ class CommandHandlerImpl(applicationContext: ApplicationContext) : CommandHandle
         }
     }
 
-    override fun handle(cmd: Command): Mono<Void> = if (processors.containsKey(cmd.commandName)) {
+    override fun handle(cmd: Command) = if (processors.containsKey(cmd.commandName)) {
         with(processors[cmd.commandName]!!) {
             if (validate(cmd)) {
                 process(cmd)
