@@ -80,6 +80,46 @@ internal class CommandProcessorImplTest(
         verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
     }
 
+    @Test
+    fun `should process create command without tags and save a pet in the database`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf()
+        }
+
+        StepVerifier.create(commandProcessorImpl.process(cmd))
+            .expectSubscription()
+            .verifyComplete()
+
+        verifyPetIsSaved(cmd)
+        verifyPetHasTags(cmd.id, cmd.getList("tags"))
+        verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
+    }
+
+    @Test
+    fun `should process create command without vaccines and save a pet in the database`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf()
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(commandProcessorImpl.process(cmd))
+            .expectSubscription()
+            .verifyComplete()
+
+        verifyPetIsSaved(cmd)
+        verifyPetHasTags(cmd.id, cmd.getList("tags"))
+        verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
+    }
+
     fun verifyPetIsSaved(cmd: Command) {
         StepVerifier.create(
             databaseClient
