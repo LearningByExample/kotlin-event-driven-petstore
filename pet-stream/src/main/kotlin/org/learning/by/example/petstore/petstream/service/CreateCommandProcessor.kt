@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
 import reactor.kotlin.core.publisher.toFlux
-import reactor.kotlin.core.publisher.toMono
 import java.util.UUID
 
 @Service
@@ -30,7 +29,7 @@ class CreateCommandProcessor(val databaseClient: DatabaseClient) : CommandProces
         deleteVaccines(cmd).switchIfEmpty {
             deleteTags(cmd).switchIfEmpty {
                 deletePet(cmd).switchIfEmpty {
-                    err.toMono<Void>()
+                    Mono.error(err)
                 }
             }
         }
