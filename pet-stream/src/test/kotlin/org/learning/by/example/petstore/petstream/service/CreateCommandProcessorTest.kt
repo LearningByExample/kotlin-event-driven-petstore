@@ -30,7 +30,7 @@ import java.util.UUID
 
 @SpringBootTest
 @Testcontainers
-internal class CommandProcessorImplTest(
+internal class CreateCommandProcessorTest(
     @Autowired val createCommandProcessor: CreateCommandProcessor,
     @Autowired val databaseClient: DatabaseClient
 ) {
