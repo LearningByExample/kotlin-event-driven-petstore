@@ -4,8 +4,11 @@ package org.learning.by.example.petstore.petstream.service
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doNothing
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
@@ -16,6 +19,7 @@ import org.learning.by.example.petstore.petstream.listener.StreamListener
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.isEquals
 import org.springframework.data.r2dbc.query.Criteria.where
@@ -24,16 +28,18 @@ import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import reactor.core.publisher.Mono
+import reactor.kotlin.test.expectError
 import reactor.test.StepVerifier
 import java.time.LocalDateTime
 import java.util.UUID
 
 @SpringBootTest
 @Testcontainers
-internal class CreateCommandProcessorTest(
-    @Autowired val createCommandProcessor: CreateCommandProcessor,
-    @Autowired val databaseClient: DatabaseClient
-) {
+internal class CreateCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) {
+    @SpyBean
+    lateinit var createCommandProcessor: CreateCommandProcessor
+
     companion object {
         @Container
         val container: PostgreSQLContainer<Nothing> = PostgreSQLContainer<Nothing>().apply {
@@ -60,6 +66,11 @@ internal class CreateCommandProcessorTest(
     @BeforeEach
     fun setUp() {
         doNothing().whenever(streamListener).onApplicationEvent(any())
+    }
+
+    @AfterEach
+    fun tearDown() {
+        reset(createCommandProcessor)
     }
 
     @Test
@@ -157,6 +168,16 @@ internal class CreateCommandProcessorTest(
         }.verifyComplete()
     }
 
+    fun verifyPetIsNotSaved(cmd: Command) {
+        StepVerifier.create(
+            databaseClient
+                .select().from("pets")
+                .project("id")
+                .matching(where("id").isEquals(cmd.id.toString()))
+                .fetch().one()
+        ).expectNextCount(0).verifyComplete()
+    }
+
     fun verifyCategoryIsCorrect(id: Int, category: String) {
         StepVerifier.create(
             databaseClient.select().from("categories")
@@ -221,6 +242,16 @@ internal class CreateCommandProcessorTest(
         }
     }
 
+    fun verifyPetHasNotTags(cmd: Command) {
+        StepVerifier.create(
+            databaseClient
+                .select().from("pets_tags")
+                .project("id_pet")
+                .matching(where("id_pet").isEquals(cmd.id.toString()))
+                .fetch().all()
+        ).expectNextCount(0).verifyComplete()
+    }
+
     fun verifyPetHasVaccine(id: UUID, vaccine: String) {
         StepVerifier.create(
             databaseClient
@@ -250,6 +281,16 @@ internal class CreateCommandProcessorTest(
         vaccines.forEach {
             verifyPetHasVaccine(id, it)
         }
+    }
+
+    fun verifyPetHasNotVaccines(cmd: Command) {
+        StepVerifier.create(
+            databaseClient
+                .select().from("pets_vaccines")
+                .project("id_pet")
+                .matching(where("id_pet").isEquals(cmd.id.toString()))
+                .fetch().all()
+        ).expectNextCount(0).verifyComplete()
     }
 
     @Test
@@ -545,5 +586,234 @@ internal class CreateCommandProcessorTest(
         DynamicTest.dynamicTest(it.case) {
             assertThat(createCommandProcessor.validate(it.cmd)).isEqualTo(it.expect)
         }
+    }
+
+    @Test
+    fun `if we fail to insert category we will not insert the pet`() {
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).insertCategory(any())
+
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to insert breed we will not insert the pet`() {
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).insertBreed(any())
+
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to insert the pet we will not have other details`() {
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).insertPet(any(), any(), any())
+
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to set the tags we will not have other details`() {
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).addTagsToPet(any(), any())
+
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to set the a tag we will not have other details`() {
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).addTagToPet(any(), any())
+
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to set a particular tag we will not have other details`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).addTagToPet(cmd.id, "tag2")
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to set the vaccines we will not have other details`() {
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).addVaccinesToPet(any(), any())
+
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to set a vaccine we will not have other details`() {
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).addVaccineToPet(any(), any())
+
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to set the vaccines without tags we will not have other details`() {
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).addVaccineToPet(any(), any())
+
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+        }
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `if we fail to set a particular vaccine we will not have other details`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value LocalDateTime.now()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
+            .whenever(createCommandProcessor).addVaccineToPet(cmd.id, "vaccine2")
+
+        StepVerifier.create(createCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
     }
 }
