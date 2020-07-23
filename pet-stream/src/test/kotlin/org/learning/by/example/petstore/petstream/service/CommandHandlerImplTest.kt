@@ -16,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import reactor.core.publisher.Mono
+import reactor.kotlin.test.expectError
 import reactor.test.StepVerifier
 
 @SpringBootTest
@@ -61,9 +62,7 @@ internal class CommandHandlerImplTest(@Autowired val commandHandlerImpl: Command
         doReturn(true).whenever(createCommandProcessor).validate(any())
 
         StepVerifier.create(commandHandlerImpl.handle(cmd))
-            .expectErrorMatches {
-                it is ProcessorNotFoundException
-            }
+            .expectError<ProcessorNotFoundException>()
             .verify()
 
         verify(createCommandProcessor, times(0)).validate(any())
@@ -82,9 +81,7 @@ internal class CommandHandlerImplTest(@Autowired val commandHandlerImpl: Command
         doReturn(false).whenever(createCommandProcessor).validate(any())
 
         StepVerifier.create(commandHandlerImpl.handle(cmd))
-            .expectErrorMatches {
-                it is CommandProcessingException
-            }
+            .expectError<CommandProcessingException>()
             .verify()
 
         verify(createCommandProcessor, times(1)).validate(any())
