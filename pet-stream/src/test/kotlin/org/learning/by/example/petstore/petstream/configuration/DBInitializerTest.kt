@@ -2,17 +2,12 @@
 
 package org.learning.by.example.petstore.petstream.configuration
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doNothing
-import com.nhaarman.mockitokotlin2.whenever
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
-import org.learning.by.example.petstore.petstream.listener.StreamListener
+import org.learning.by.example.petstore.petstream.test.BasicTest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.isEquals
 import org.springframework.data.r2dbc.query.Criteria.where
@@ -27,7 +22,7 @@ import reactor.test.StepVerifier
 
 @SpringBootTest
 @Testcontainers
-internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) {
+internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) : BasicTest() {
     companion object {
         @Container
         val container: PostgreSQLContainer<Nothing> = PostgreSQLContainer<Nothing>().apply {
@@ -49,14 +44,6 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
 
         val TABLES_TO_CHECK = arrayOf("categories", "breeds", "pets", "vaccines", "tags", "pets_vaccines", "pets_tags")
         val ROUTINES_TO_CHECK = arrayOf("insert_category", "insert_breed", "insert_vaccine", "insert_tag")
-    }
-
-    @MockBean
-    lateinit var streamListener: StreamListener
-
-    @BeforeEach
-    fun setup() {
-        doNothing().whenever(streamListener).onApplicationEvent(any())
     }
 
     fun checkIfTableExist(name: String): Mono<Boolean> = databaseClient.select()

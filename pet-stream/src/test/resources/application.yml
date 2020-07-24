@@ -6,7 +6,23 @@ spring:
 
 logging:
     level:
+        root: DEBUG
         org:
             springframework:
                 data:
-                    r2dbc: DEBUG
+                    r2dbc: TRACE
+service:
+    commands:
+        consumer:
+            bootstrap-server: localhost:9092
+            topic: pet-commands
+            client-id: pet_commands_consumer
+            group-id: pet_commands_consumers
+            offset-earliest: earliest
+            timeout-ms: 500
+        producer:
+            bootstrap-server: localhost:9092
+            topic: pet-commands
+            client-id: pet_commands_producer
+            ack: all
+            timeout-ms: 500

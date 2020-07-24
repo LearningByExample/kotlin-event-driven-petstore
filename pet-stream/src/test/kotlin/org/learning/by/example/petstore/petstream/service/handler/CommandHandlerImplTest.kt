@@ -1,37 +1,26 @@
 package org.learning.by.example.petstore.petstream.service.handler
 
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.times
 import com.nhaarman.mockitokotlin2.verify
 import com.nhaarman.mockitokotlin2.whenever
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.learning.by.example.petstore.command.dsl.command
-import org.learning.by.example.petstore.petstream.listener.StreamListener
 import org.learning.by.example.petstore.petstream.service.processor.CreatePetCommandProcessor
+import org.learning.by.example.petstore.petstream.test.BasicTest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import reactor.core.publisher.Mono
 import reactor.kotlin.test.expectError
 import reactor.test.StepVerifier
 
 @SpringBootTest
-internal class CommandHandlerImplTest(@Autowired val commandHandlerImpl: CommandHandlerImpl) {
+internal class CommandHandlerImplTest(@Autowired val commandHandlerImpl: CommandHandlerImpl) : BasicTest() {
     @SpyBean
     lateinit var createPetCommandProcessor: CreatePetCommandProcessor
-
-    @MockBean
-    lateinit var streamListener: StreamListener
-
-    @BeforeEach
-    fun setUp() {
-        doNothing().whenever(streamListener).onApplicationEvent(any())
-    }
 
     @Test
     fun `we should handle correct commands`() {

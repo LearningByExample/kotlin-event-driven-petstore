@@ -3,22 +3,19 @@
 package org.learning.by.example.petstore.petstream.service.processor
 
 import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doNothing
 import com.nhaarman.mockitokotlin2.doReturn
 import com.nhaarman.mockitokotlin2.reset
 import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.learning.by.example.petstore.command.Command
 import org.learning.by.example.petstore.command.dsl.command
-import org.learning.by.example.petstore.petstream.listener.StreamListener
+import org.learning.by.example.petstore.petstream.test.BasicTest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.isEquals
@@ -31,12 +28,14 @@ import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.core.publisher.Mono
 import reactor.kotlin.test.expectError
 import reactor.test.StepVerifier
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.util.UUID
 
 @SpringBootTest
 @Testcontainers
-internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) {
+internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) : BasicTest() {
     @SpyBean
     lateinit var createPetCommandProcessor: CreatePetCommandProcessor
 
@@ -60,14 +59,6 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
         }
     }
 
-    @MockBean
-    lateinit var streamListener: StreamListener
-
-    @BeforeEach
-    fun setUp() {
-        doNothing().whenever(streamListener).onApplicationEvent(any())
-    }
-
     @AfterEach
     fun tearDown() {
         reset(createPetCommandProcessor)
@@ -80,7 +71,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -100,7 +91,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf()
         }
 
@@ -120,7 +111,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
         }
 
         StepVerifier.create(createPetCommandProcessor.process(cmd))
@@ -138,7 +129,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf()
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -161,7 +152,12 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
         ).expectSubscription().consumeNextWith {
             assertThat(it["id"]).isEqualTo(cmd.id.toString())
             assertThat(it["name"]).isEqualTo(cmd.get("name"))
-            assertThat(it["dob"]).isEqualTo(cmd.get<LocalDateTime>("dob"))
+            assertThat(it["dob"]).isEqualTo(
+                LocalDateTime.ofInstant(
+                    Instant.parse(cmd.get("dob")),
+                    ZoneOffset.systemDefault()
+                )
+            )
             assertThat(it["category"] as Int).isNotZero()
             verifyCategoryIsCorrect(it["category"] as Int, cmd.get("category"))
             verifyBreedIsCorrect(it["breed"] as Int, cmd.get("breed"))
@@ -364,7 +360,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1")
         }
 
@@ -417,7 +413,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1")
         }
 
@@ -439,7 +435,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -461,7 +457,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1")
         }
 
@@ -483,7 +479,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -508,7 +504,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
                 "category" value "category"
                 "breed" value "breed"
                 "vaccines" values listOf("vaccine1", "vaccine2")
-                "dob" value LocalDateTime.now()
+                "dob" value Instant.now().toString()
                 "tags" values listOf("tag1", "tag2", "tag3")
             },
             expect = true
@@ -519,7 +515,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
                 "category" value "category"
                 "breed" value "breed"
                 "vaccines" values listOf("vaccine1", "vaccine2")
-                "dob" value LocalDateTime.now()
+                "dob" value Instant.now().toString()
                 "tags" values listOf("tag1", "tag2", "tag3")
             },
             expect = false
@@ -530,7 +526,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
                 "name" value "name"
                 "breed" value "breed"
                 "vaccines" values listOf("vaccine1", "vaccine2")
-                "dob" value LocalDateTime.now()
+                "dob" value Instant.now().toString()
                 "tags" values listOf("tag1", "tag2", "tag3")
             },
             expect = false
@@ -541,7 +537,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
                 "name" value "name"
                 "category" value "category"
                 "vaccines" values listOf("vaccine1", "vaccine2")
-                "dob" value LocalDateTime.now()
+                "dob" value Instant.now().toString()
                 "tags" values listOf("tag1", "tag2", "tag3")
             },
             expect = false
@@ -552,7 +548,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
                 "name" value "name"
                 "category" value "category"
                 "breed" value "breed"
-                "dob" value LocalDateTime.now()
+                "dob" value Instant.now().toString()
                 "tags" values listOf("tag1", "tag2", "tag3")
             },
             expect = false
@@ -575,7 +571,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
                 "category" value "category"
                 "breed" value "breed"
                 "vaccines" values listOf("vaccine1", "vaccine2")
-                "dob" value LocalDateTime.now()
+                "dob" value Instant.now().toString()
             },
             expect = false
         )
@@ -598,7 +594,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -621,7 +617,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -644,7 +640,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -667,7 +663,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -690,7 +686,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -710,7 +706,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -736,7 +732,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -759,7 +755,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
@@ -782,7 +778,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
         }
 
         StepVerifier.create(createPetCommandProcessor.process(cmd))
@@ -801,7 +797,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             "category" value "category"
             "breed" value "breed"
             "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value LocalDateTime.now()
+            "dob" value Instant.now().toString()
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
 import reactor.kotlin.core.publisher.toFlux
+import java.time.Instant
 import java.util.UUID
 
 @Service
@@ -53,7 +54,7 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient) : CommandPro
     fun insertPet(cmd: Command, categoryId: Int, breedId: Int) = databaseClient.insert().into("pets")
         .value("id", cmd.id.toString())
         .value("name", cmd.get("name"))
-        .value("dob", cmd.get("dob"))
+        .value("dob", Instant.parse(cmd.get("dob")))
         .value("category", categoryId)
         .value("breed", breedId)
         .then().onErrorMap {
