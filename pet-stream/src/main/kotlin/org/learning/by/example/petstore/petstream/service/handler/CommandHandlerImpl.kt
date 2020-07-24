@@ -9,16 +9,12 @@ import reactor.core.publisher.Mono
 
 @Service
 class CommandHandlerImpl(applicationContext: ApplicationContext) : CommandHandler {
-    private val processors = hashMapOf<String, CommandProcessor>()
+    private val processors = applicationContext.getBeansOfType<CommandProcessor>().map {
+        it.value.getCommandName() to it.value
+    }.toMap()
 
-    init {
-        applicationContext.getBeansOfType<CommandProcessor>().forEach {
-            processors[it.value.getCommandName()] = it.value
-        }
-    }
-
-    override fun handle(cmd: Command) = if (processors.containsKey(cmd.commandName)) {
-        with(processors[cmd.commandName]!!) {
+    override fun handle(cmd: Command) = if (cmd.commandName in processors) {
+        with(processors.getValue(cmd.commandName)) {
             if (validate(cmd)) {
                 process(cmd)
             } else {
