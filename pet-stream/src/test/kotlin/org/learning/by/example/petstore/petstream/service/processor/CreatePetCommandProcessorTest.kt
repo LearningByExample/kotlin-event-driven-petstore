@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package org.learning.by.example.petstore.petstream.service
+package org.learning.by.example.petstore.petstream.service.processor
 
 import com.nhaarman.mockitokotlin2.any
 import com.nhaarman.mockitokotlin2.doNothing
@@ -36,9 +36,9 @@ import java.util.UUID
 
 @SpringBootTest
 @Testcontainers
-internal class CreateCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) {
+internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) {
     @SpyBean
-    lateinit var createCommandProcessor: CreateCommandProcessor
+    lateinit var createPetCommandProcessor: CreatePetCommandProcessor
 
     companion object {
         @Container
@@ -70,7 +70,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
 
     @AfterEach
     fun tearDown() {
-        reset(createCommandProcessor)
+        reset(createPetCommandProcessor)
     }
 
     @Test
@@ -84,7 +84,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectSubscription()
             .verifyComplete()
 
@@ -104,7 +104,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf()
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectSubscription()
             .verifyComplete()
 
@@ -123,7 +123,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "dob" value LocalDateTime.now()
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectSubscription()
             .verifyComplete()
 
@@ -142,7 +142,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectSubscription()
             .verifyComplete()
 
@@ -297,7 +297,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     fun `we should insert categories and keep already inserted`() {
         var firstCategory = -1
 
-        StepVerifier.create(createCommandProcessor.insertCategory("one"))
+        StepVerifier.create(createPetCommandProcessor.insertCategory("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -306,7 +306,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             }
             .verifyComplete()
 
-        StepVerifier.create(createCommandProcessor.insertCategory("two"))
+        StepVerifier.create(createPetCommandProcessor.insertCategory("two"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -315,7 +315,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             }
             .verifyComplete()
 
-        StepVerifier.create(createCommandProcessor.insertCategory("one"))
+        StepVerifier.create(createPetCommandProcessor.insertCategory("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -329,7 +329,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     fun `we should insert breeds and keep already inserted`() {
         var firstBreed = -1
 
-        StepVerifier.create(createCommandProcessor.insertBreed("one"))
+        StepVerifier.create(createPetCommandProcessor.insertBreed("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -338,7 +338,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             }
             .verifyComplete()
 
-        StepVerifier.create(createCommandProcessor.insertBreed("two"))
+        StepVerifier.create(createPetCommandProcessor.insertBreed("two"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -347,7 +347,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             }
             .verifyComplete()
 
-        StepVerifier.create(createCommandProcessor.insertBreed("one"))
+        StepVerifier.create(createPetCommandProcessor.insertBreed("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -368,10 +368,10 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1")
         }
 
-        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
-        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        val categoryId = createPetCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createPetCommandProcessor.insertBreed(cmd.get("breed")).block()!!
 
-        StepVerifier.create(createCommandProcessor.insertPet(cmd, categoryId, breedId))
+        StepVerifier.create(createPetCommandProcessor.insertPet(cmd, categoryId, breedId))
             .expectSubscription()
             .verifyComplete()
 
@@ -382,7 +382,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     fun `we should insert tags and keep already inserted`() {
         var firstTag = -1
 
-        StepVerifier.create(createCommandProcessor.insertTag("one"))
+        StepVerifier.create(createPetCommandProcessor.insertTag("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -391,7 +391,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             }
             .verifyComplete()
 
-        StepVerifier.create(createCommandProcessor.insertTag("two"))
+        StepVerifier.create(createPetCommandProcessor.insertTag("two"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -400,7 +400,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             }
             .verifyComplete()
 
-        StepVerifier.create(createCommandProcessor.insertTag("one"))
+        StepVerifier.create(createPetCommandProcessor.insertTag("one"))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it).isNotZero()
@@ -421,11 +421,11 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1")
         }
 
-        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
-        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
-        createCommandProcessor.insertPet(cmd, categoryId, breedId).block()
+        val categoryId = createPetCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createPetCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        createPetCommandProcessor.insertPet(cmd, categoryId, breedId).block()
 
-        StepVerifier.create(createCommandProcessor.addTagToPet(cmd.id, "tag1"))
+        StepVerifier.create(createPetCommandProcessor.addTagToPet(cmd.id, "tag1"))
             .expectSubscription()
             .verifyComplete()
 
@@ -443,12 +443,12 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
-        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
-        createCommandProcessor.insertPet(cmd, categoryId, breedId).block()
+        val categoryId = createPetCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createPetCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        createPetCommandProcessor.insertPet(cmd, categoryId, breedId).block()
 
         val tags = cmd.getList<String>("tags")
-        StepVerifier.create(createCommandProcessor.addTagsToPet(cmd.id, tags))
+        StepVerifier.create(createPetCommandProcessor.addTagsToPet(cmd.id, tags))
             .expectSubscription()
             .verifyComplete()
         verifyPetHasTags(cmd.id, tags)
@@ -465,11 +465,11 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1")
         }
 
-        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
-        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
-        createCommandProcessor.insertPet(cmd, categoryId, breedId).block()
+        val categoryId = createPetCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createPetCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        createPetCommandProcessor.insertPet(cmd, categoryId, breedId).block()
 
-        StepVerifier.create(createCommandProcessor.addVaccineToPet(cmd.id, "vaccine1"))
+        StepVerifier.create(createPetCommandProcessor.addVaccineToPet(cmd.id, "vaccine1"))
             .expectSubscription()
             .verifyComplete()
 
@@ -487,12 +487,12 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        val categoryId = createCommandProcessor.insertCategory(cmd.get("category")).block()!!
-        val breedId = createCommandProcessor.insertBreed(cmd.get("breed")).block()!!
-        createCommandProcessor.insertPet(cmd, categoryId, breedId).block()
+        val categoryId = createPetCommandProcessor.insertCategory(cmd.get("category")).block()!!
+        val breedId = createPetCommandProcessor.insertBreed(cmd.get("breed")).block()!!
+        createPetCommandProcessor.insertPet(cmd, categoryId, breedId).block()
 
         val vaccines = cmd.getList<String>("vaccines")
-        StepVerifier.create(createCommandProcessor.addVaccinesToPet(cmd.id, vaccines))
+        StepVerifier.create(createPetCommandProcessor.addVaccinesToPet(cmd.id, vaccines))
             .expectSubscription()
             .verifyComplete()
         verifyPetHasVaccines(cmd.id, vaccines)
@@ -584,14 +584,14 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     @TestFactory
     fun `we should validate create pet commands`() = validationCases.map {
         DynamicTest.dynamicTest(it.case) {
-            assertThat(createCommandProcessor.validate(it.cmd)).isEqualTo(it.expect)
+            assertThat(createPetCommandProcessor.validate(it.cmd)).isEqualTo(it.expect)
         }
     }
 
     @Test
     fun `if we fail to insert category we will not insert the pet`() {
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).insertCategory(any())
+            .whenever(createPetCommandProcessor).insertCategory(any())
 
         val cmd = command("pet_create") {
             "name" value "name"
@@ -602,7 +602,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -614,7 +614,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     @Test
     fun `if we fail to insert breed we will not insert the pet`() {
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).insertBreed(any())
+            .whenever(createPetCommandProcessor).insertBreed(any())
 
         val cmd = command("pet_create") {
             "name" value "name"
@@ -625,7 +625,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -637,7 +637,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     @Test
     fun `if we fail to insert the pet we will not have other details`() {
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).insertPet(any(), any(), any())
+            .whenever(createPetCommandProcessor).insertPet(any(), any(), any())
 
         val cmd = command("pet_create") {
             "name" value "name"
@@ -648,7 +648,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -660,7 +660,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     @Test
     fun `if we fail to set the tags we will not have other details`() {
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).addTagsToPet(any(), any())
+            .whenever(createPetCommandProcessor).addTagsToPet(any(), any())
 
         val cmd = command("pet_create") {
             "name" value "name"
@@ -671,7 +671,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -683,7 +683,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     @Test
     fun `if we fail to set the a tag we will not have other details`() {
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).addTagToPet(any(), any())
+            .whenever(createPetCommandProcessor).addTagToPet(any(), any())
 
         val cmd = command("pet_create") {
             "name" value "name"
@@ -694,7 +694,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -715,9 +715,9 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
         }
 
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).addTagToPet(cmd.id, "tag2")
+            .whenever(createPetCommandProcessor).addTagToPet(cmd.id, "tag2")
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -729,7 +729,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     @Test
     fun `if we fail to set the vaccines we will not have other details`() {
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).addVaccinesToPet(any(), any())
+            .whenever(createPetCommandProcessor).addVaccinesToPet(any(), any())
 
         val cmd = command("pet_create") {
             "name" value "name"
@@ -740,7 +740,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -752,7 +752,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     @Test
     fun `if we fail to set a vaccine we will not have other details`() {
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).addVaccineToPet(any(), any())
+            .whenever(createPetCommandProcessor).addVaccineToPet(any(), any())
 
         val cmd = command("pet_create") {
             "name" value "name"
@@ -763,7 +763,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "tags" values listOf("tag1", "tag2", "tag3")
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -775,7 +775,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
     @Test
     fun `if we fail to set the vaccines without tags we will not have other details`() {
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).addVaccineToPet(any(), any())
+            .whenever(createPetCommandProcessor).addVaccineToPet(any(), any())
 
         val cmd = command("pet_create") {
             "name" value "name"
@@ -785,7 +785,7 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
             "dob" value LocalDateTime.now()
         }
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 
@@ -806,9 +806,9 @@ internal class CreateCommandProcessorTest(@Autowired val databaseClient: Databas
         }
 
         doReturn(Mono.error<Int>(CreatePetException("Something Wrong happen")))
-            .whenever(createCommandProcessor).addVaccineToPet(cmd.id, "vaccine2")
+            .whenever(createPetCommandProcessor).addVaccineToPet(cmd.id, "vaccine2")
 
-        StepVerifier.create(createCommandProcessor.process(cmd))
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
             .expectError<CreatePetException>()
             .verify()
 

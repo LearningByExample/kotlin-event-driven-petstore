@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION")
 
-package org.learning.by.example.petstore.petstream.service
+package org.learning.by.example.petstore.petstream.service.processor
 
 import org.learning.by.example.petstore.command.Command
 import org.springframework.data.r2dbc.core.DatabaseClient
@@ -13,7 +13,7 @@ import reactor.kotlin.core.publisher.toFlux
 import java.util.UUID
 
 @Service
-class CreateCommandProcessor(val databaseClient: DatabaseClient) : CommandProcessor {
+class CreatePetCommandProcessor(val databaseClient: DatabaseClient) : CommandProcessor {
     override fun process(cmd: Command) = insertCategory(cmd.get("category")).flatMap { category ->
         insertBreed(cmd.get("breed")).flatMap { breed ->
             insertPet(cmd, category, breed).switchIfEmpty {

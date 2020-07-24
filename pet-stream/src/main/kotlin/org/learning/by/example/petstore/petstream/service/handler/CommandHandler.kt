@@ -1,4 +1,4 @@
-package org.learning.by.example.petstore.petstream.service
+package org.learning.by.example.petstore.petstream.service.handler
 
 import org.learning.by.example.petstore.command.Command
 import reactor.core.publisher.Mono
