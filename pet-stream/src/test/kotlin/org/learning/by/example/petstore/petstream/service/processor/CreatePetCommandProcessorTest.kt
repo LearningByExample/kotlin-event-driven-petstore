@@ -13,18 +13,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
 import org.learning.by.example.petstore.command.Command
 import org.learning.by.example.petstore.command.dsl.command
-import org.learning.by.example.petstore.petstream.test.BasicTest
+import org.learning.by.example.petstore.petstream.test.DatabaseTest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.isEquals
 import org.springframework.data.r2dbc.query.Criteria.where
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.core.publisher.Mono
 import reactor.kotlin.test.expectError
 import reactor.test.StepVerifier
@@ -34,30 +29,9 @@ import java.time.ZoneOffset
 import java.util.UUID
 
 @SpringBootTest
-@Testcontainers
-internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) : BasicTest() {
+internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) : DatabaseTest() {
     @SpyBean
     lateinit var createPetCommandProcessor: CreatePetCommandProcessor
-
-    companion object {
-        @Container
-        val container: PostgreSQLContainer<Nothing> = PostgreSQLContainer<Nothing>().apply {
-            withDatabaseName("pets")
-            withUsername("petuser")
-            withPassword("petpwd")
-        }
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setupProperties(registry: DynamicPropertyRegistry) = with(container) {
-            registry.add("spring.r2dbc.url") {
-                "r2dbc:postgresql://$host:$firstMappedPort/$databaseName"
-            }
-            registry.add("spring.r2dbc.username", ::getUsername)
-            registry.add("spring.r2dbc.password", ::getPassword)
-            registry.add("db.initialize") { "true" }
-        }
-    }
 
     @AfterEach
     fun tearDown() {
