@@ -41,15 +41,33 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient) : CommandPro
     override fun validate(cmd: Command) = cmd.contains("name") && cmd.contains("dob") && cmd.contains("category") &&
         cmd.contains("breed") && cmd.contains("tags") && cmd.contains("vaccines")
 
-    fun insertCategory(name: String) = databaseClient.execute("select insert_category('$name')")
-        .fetch().one().map { it["insert_category"] as Int }.onErrorMap {
-            CreatePetException("error inserting category", it)
+    fun insertIfNotExist(table: String, name: String) = databaseClient.execute(
+        """
+        INSERT
+        INTO $table (name)
+        SELECT :name_value
+        WHERE :name_value NOT IN
+        (
+            SELECT name
+            FROM $table
+            WHERE name = :name_value
+        )
+        """
+    )
+        .bind("name_value", name)
+        .fetch()
+        .rowsUpdated()
+        .flatMap {
+            databaseClient.select().from(table)
+                .project("id")
+                .matching(where("name").isEquals(name))
+                .fetch().one()
+                .map { it.getValue("id") as Int }
         }
 
-    fun insertBreed(name: String) = databaseClient.execute("select insert_breed('$name')")
-        .fetch().one().map { it["insert_breed"] as Int }.onErrorMap {
-            CreatePetException("error inserting breed", it)
-        }
+    fun insertCategory(name: String) = insertIfNotExist("categories", name)
+
+    fun insertBreed(name: String) = insertIfNotExist("breeds", name)
 
     fun insertPet(cmd: Command, categoryId: Int, breedId: Int) = databaseClient.insert().into("pets")
         .value("id", cmd.id.toString())
@@ -66,10 +84,7 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient) : CommandPro
             CreatePetException("error deleting pet", it)
         }
 
-    fun insertTag(name: String) = databaseClient.execute("select insert_tag('$name')")
-        .fetch().one().map { it["insert_tag"] as Int }.onErrorMap {
-            CreatePetException("error inserting tag", it)
-        }
+    fun insertTag(name: String) = insertIfNotExist("tags", name)
 
     fun addTagToPet(petId: UUID, tag: String) = insertTag(tag).flatMap {
         databaseClient.insert().into("pets_tags")
@@ -93,8 +108,7 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient) : CommandPro
             CreatePetException("error deleting tags", it)
         }
 
-    fun insertVaccine(name: String) = databaseClient.execute("select insert_vaccine('$name')")
-        .fetch().one().map { it["insert_vaccine"] as Int }
+    fun insertVaccine(name: String) = insertIfNotExist("vaccines", name)
 
     fun addVaccineToPet(petId: UUID, vaccine: String) = insertVaccine(vaccine).flatMap {
         databaseClient.insert().into("pets_vaccines")
