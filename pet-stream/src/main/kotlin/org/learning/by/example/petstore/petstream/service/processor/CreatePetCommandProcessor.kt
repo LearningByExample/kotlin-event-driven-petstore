@@ -63,6 +63,8 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient) : CommandPro
                 .matching(where("name").isEquals(name))
                 .fetch().one()
                 .map { it.getValue("id") as Int }
+        }.onErrorMap {
+            CreatePetException("error inserting '$name' in table '$table'", it)
         }
 
     fun insertCategory(name: String) = insertIfNotExist("categories", name)

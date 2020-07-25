@@ -148,38 +148,21 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
         ).expectNextCount(0).verifyComplete()
     }
 
-    fun verifyCategoryIsCorrect(id: Int, category: String) {
+    fun verifyNameMatchValueInTableById(value: String, table: String, id: Int) {
         StepVerifier.create(
-            databaseClient.select().from("categories")
+            databaseClient.select().from(table)
                 .project("name")
                 .matching(where("id").isEquals(id))
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
-            assertThat(it["name"]).isEqualTo(category)
+            assertThat(it["name"]).isEqualTo(value)
         }.verifyComplete()
     }
 
-    fun verifyBreedIsCorrect(id: Int, breed: String) {
-        StepVerifier.create(
-            databaseClient.select().from("breeds")
-                .project("name")
-                .matching(where("id").isEquals(id))
-                .fetch().one()
-        ).expectSubscription().consumeNextWith {
-            assertThat(it["name"]).isEqualTo(breed)
-        }.verifyComplete()
-    }
-
-    fun verifyTagIsCorrect(id: Int, tag: String) {
-        StepVerifier.create(
-            databaseClient.select().from("tags")
-                .project("name")
-                .matching(where("id").isEquals(id))
-                .fetch().one()
-        ).expectSubscription().consumeNextWith {
-            assertThat(it["name"]).isEqualTo(tag)
-        }.verifyComplete()
-    }
+    fun verifyCategoryIsCorrect(id: Int, category: String) = verifyNameMatchValueInTableById(category, "categories", id)
+    fun verifyBreedIsCorrect(id: Int, breed: String) = verifyNameMatchValueInTableById(breed, "breeds", id)
+    fun verifyTagIsCorrect(id: Int, tag: String) = verifyNameMatchValueInTableById(tag, "tags", id)
+    fun verifyVaccineIsCorrect(id: Int, vaccine: String) = verifyNameMatchValueInTableById(vaccine, "vaccines", id)
 
     fun verifyPetHasTag(id: UUID, tag: String) {
         StepVerifier.create(
@@ -263,68 +246,110 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
         ).expectNextCount(0).verifyComplete()
     }
 
-    @Test
-    fun `we should insert categories and keep already inserted`() {
-        var firstCategory = -1
+    data class InsertIfExistCase(val table: String, val error: Boolean)
 
-        StepVerifier.create(createPetCommandProcessor.insertCategory("one"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                firstCategory = it
-                verifyCategoryIsCorrect(it, "one")
-            }
-            .verifyComplete()
+    @TestFactory
+    fun `we should insert if not exist and keep already inserted`() = listOf(
+        InsertIfExistCase(
+            table = "categories",
+            error = false
+        ),
+        InsertIfExistCase(
+            table = "breeds",
+            error = false
+        ),
+        InsertIfExistCase(
+            table = "vaccines",
+            error = false
+        ),
+        InsertIfExistCase(
+            table = "tags",
+            error = false
+        ),
+        InsertIfExistCase(
+            table = "bad_table",
+            error = true
+        )
+    ).map { case ->
+        DynamicTest.dynamicTest("table ${case.table}") {
+            if (!case.error) {
+                var firstId = -1
+                val firstValue = "${case.table}1"
+                val secondValue = "${case.table}2"
 
-        StepVerifier.create(createPetCommandProcessor.insertCategory("two"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                assertThat(it).isNotEqualTo(firstCategory)
-                verifyCategoryIsCorrect(it, "two")
-            }
-            .verifyComplete()
+                StepVerifier.create(createPetCommandProcessor.insertIfNotExist(case.table, firstValue))
+                    .expectSubscription()
+                    .consumeNextWith {
+                        assertThat(it).isNotZero()
+                        firstId = it
+                        verifyNameMatchValueInTableById(firstValue, case.table, it)
+                    }
+                    .verifyComplete()
 
-        StepVerifier.create(createPetCommandProcessor.insertCategory("one"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                assertThat(it).isEqualTo(firstCategory)
-                verifyCategoryIsCorrect(it, "one")
+                StepVerifier.create(createPetCommandProcessor.insertIfNotExist(case.table, secondValue))
+                    .expectSubscription()
+                    .consumeNextWith {
+                        assertThat(it).isNotZero()
+                        assertThat(it).isNotEqualTo(firstId)
+                        verifyNameMatchValueInTableById(secondValue, case.table, it)
+                    }
+                    .verifyComplete()
+
+                StepVerifier.create(createPetCommandProcessor.insertIfNotExist(case.table, firstValue))
+                    .expectSubscription()
+                    .consumeNextWith {
+                        assertThat(it).isNotZero()
+                        assertThat(it).isEqualTo(firstId)
+                        verifyNameMatchValueInTableById(firstValue, case.table, it)
+                    }
+                    .verifyComplete()
+            } else {
+                StepVerifier.create(createPetCommandProcessor.insertIfNotExist(case.table, "value"))
+                    .expectSubscription()
+                    .expectError<CreatePetException>()
+                    .verify()
             }
-            .verifyComplete()
+        }
     }
 
-    @Test
-    fun `we should insert breeds and keep already inserted`() {
-        var firstBreed = -1
+    data class InsertIndividualFunCases(
+        val name: String,
+        val insertFunc: (String) -> Mono<Int>,
+        val verifyFunc: (Int, String) -> Unit
+    )
 
-        StepVerifier.create(createPetCommandProcessor.insertBreed("one"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                firstBreed = it
-                verifyBreedIsCorrect(it, "one")
-            }
-            .verifyComplete()
-
-        StepVerifier.create(createPetCommandProcessor.insertBreed("two"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                assertThat(it).isNotEqualTo(firstBreed)
-                verifyBreedIsCorrect(it, "two")
-            }
-            .verifyComplete()
-
-        StepVerifier.create(createPetCommandProcessor.insertBreed("one"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                assertThat(it).isEqualTo(firstBreed)
-                verifyBreedIsCorrect(it, "one")
-            }
-            .verifyComplete()
+    @TestFactory
+    fun `we should individual test each insert function`() = listOf(
+        InsertIndividualFunCases(
+            name = "breed",
+            insertFunc = createPetCommandProcessor::insertBreed,
+            verifyFunc = ::verifyBreedIsCorrect
+        ),
+        InsertIndividualFunCases(
+            name = "category",
+            insertFunc = createPetCommandProcessor::insertCategory,
+            verifyFunc = ::verifyCategoryIsCorrect
+        ),
+        InsertIndividualFunCases(
+            name = "vaccine",
+            insertFunc = createPetCommandProcessor::insertVaccine,
+            verifyFunc = ::verifyVaccineIsCorrect
+        ),
+        InsertIndividualFunCases(
+            name = "tag",
+            insertFunc = createPetCommandProcessor::insertTag,
+            verifyFunc = ::verifyTagIsCorrect
+        )
+    ).map { case ->
+        DynamicTest.dynamicTest(case.name) {
+            StepVerifier
+                .create(case.insertFunc(case.name))
+                .expectSubscription()
+                .consumeNextWith {
+                    case.verifyFunc(it, case.name)
+                }
+                .verifyComplete()
+        }
     }
 
     @Test
@@ -346,38 +371,6 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             .verifyComplete()
 
         verifyPetIsSaved(cmd)
-    }
-
-    @Test
-    fun `we should insert tags and keep already inserted`() {
-        var firstTag = -1
-
-        StepVerifier.create(createPetCommandProcessor.insertTag("one"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                firstTag = it
-                verifyTagIsCorrect(it, "one")
-            }
-            .verifyComplete()
-
-        StepVerifier.create(createPetCommandProcessor.insertTag("two"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                assertThat(it).isNotEqualTo(firstTag)
-                verifyTagIsCorrect(it, "two")
-            }
-            .verifyComplete()
-
-        StepVerifier.create(createPetCommandProcessor.insertTag("one"))
-            .expectSubscription()
-            .consumeNextWith {
-                assertThat(it).isNotZero()
-                assertThat(it).isEqualTo(firstTag)
-                verifyTagIsCorrect(it, "one")
-            }
-            .verifyComplete()
     }
 
     @Test
@@ -470,7 +463,8 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
 
     data class ValidationCase(val case: String, val cmd: Command, val expect: Boolean)
 
-    val validationCases = listOf(
+    @TestFactory
+    fun `we should validate create pet commands`() = listOf(
         ValidationCase(
             case = "all details correct should return true",
             cmd = command("pet_create") {
@@ -549,10 +543,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
             },
             expect = false
         )
-    )
-
-    @TestFactory
-    fun `we should validate create pet commands`() = validationCases.map {
+    ).map {
         DynamicTest.dynamicTest(it.case) {
             assertThat(createPetCommandProcessor.validate(it.cmd)).isEqualTo(it.expect)
         }
