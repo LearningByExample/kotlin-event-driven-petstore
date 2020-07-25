@@ -12,3 +12,5 @@ service:
             group-id: pet_commands_consumers
             offset-earliest: earliest
             timeout-ms: 500
+db:
+    initialize: false
