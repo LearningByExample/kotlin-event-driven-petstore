@@ -3,14 +3,6 @@ spring:
         url: r2dbc:postgresql://localhost:5432/postgres
         username: user
         password: pass
-
-logging:
-    level:
-        root: DEBUG
-        org:
-            springframework:
-                data:
-                    r2dbc: TRACE
 service:
     commands:
         consumer:
@@ -26,3 +18,13 @@ service:
             client-id: pet_commands_producer
             ack: all
             timeout-ms: 500
+db:
+    initialize: false
+
+logging:
+    level:
+        root: DEBUG
+        org:
+            springframework:
+                data:
+                    r2dbc: TRACE
