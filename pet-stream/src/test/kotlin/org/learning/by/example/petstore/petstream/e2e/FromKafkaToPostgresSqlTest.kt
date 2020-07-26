@@ -27,13 +27,16 @@ class FromKafkaToPostgresSqlTest(
 ) {
     companion object {
         @Container
-        private val KAFKA_CONTAINER = KafkaContainer()
+        private val KAFKA_CONTAINER = KafkaContainer().apply {
+            withReuse(false)
+        }
 
         @Container
         val postgresSQLContainer: PostgreSQLContainer<Nothing> = PostgreSQLContainer<Nothing>().apply {
             withDatabaseName("pets")
             withUsername("petuser")
             withPassword("petpwd")
+            withReuse(false)
         }
 
         @JvmStatic

@@ -14,6 +14,7 @@ abstract class DatabaseTest : BasicTest() {
             withDatabaseName("pets")
             withUsername("petuser")
             withPassword("petpwd")
+            withReuse(false)
         }
 
         @DynamicPropertySource

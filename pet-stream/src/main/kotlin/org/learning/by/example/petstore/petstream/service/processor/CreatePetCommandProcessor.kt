@@ -2,44 +2,114 @@
 
 package org.learning.by.example.petstore.petstream.service.processor
 
+import io.r2dbc.spi.ConnectionFactory
 import org.learning.by.example.petstore.command.Command
+import org.springframework.data.r2dbc.connectionfactory.R2dbcTransactionManager
 import org.springframework.data.r2dbc.core.DatabaseClient
-import org.springframework.data.r2dbc.core.isEquals
-import org.springframework.data.r2dbc.query.Criteria.where
 import org.springframework.stereotype.Service
+import org.springframework.transaction.reactive.TransactionalOperator
 import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.switchIfEmpty
 import reactor.kotlin.core.publisher.toFlux
 import java.time.Instant
-import java.util.UUID
 
 @Service
-class CreatePetCommandProcessor(val databaseClient: DatabaseClient) : CommandProcessor {
-    override fun process(cmd: Command) = insertCategory(cmd.get("category")).flatMap { category ->
-        insertBreed(cmd.get("breed")).flatMap { breed ->
-            insertPet(cmd, category, breed).switchIfEmpty {
-                if (cmd.contains("tags"))
-                    addTagsToPet(cmd.id, cmd.getList("tags"))
-                else
-                    Mono.empty()
-            }.switchIfEmpty {
-                addVaccinesToPet(cmd.id, cmd.getList("vaccines"))
+class CreatePetCommandProcessor(val databaseClient: DatabaseClient, val connectionFactory: ConnectionFactory) :
+    CommandProcessor {
+    override fun process(cmd: Command): Mono<Void> {
+        val category = cmd.get<String>("category")
+        val breed = cmd.get<String>("breed")
+        val vaccines = cmd.getList<String>("vaccines")
+        val tags = if (cmd.contains("tags")) cmd.getList<String>("tags") else listOf()
+
+        val operator = TransactionalOperator.create(R2dbcTransactionManager(connectionFactory))
+
+        return insertReferences(category, breed, vaccines, tags).then(
+            insertPet(cmd).then(
+                insertVaccines(cmd.id.toString(), vaccines).then(
+                    if (tags.isNotEmpty())
+                        insertTags(cmd.id.toString(), tags)
+                    else
+                        Mono.empty<Void>()
+                )
+            )
+        )
+            .`as`(operator::transactional)
+            .onErrorMap {
+                CreatePetException("error processing command : '$cmd'", it)
             }
-        }
-    }.onErrorResume { err: Throwable ->
-        deleteVaccines(cmd).switchIfEmpty {
-            deleteTags(cmd).switchIfEmpty {
-                deletePet(cmd).switchIfEmpty {
-                    Mono.error(err)
-                }
-            }
-        }
     }
 
-    override fun getCommandName() = "pet_create"
+    fun insertCategory(category: String) = insertIfNotExist("categories", category)
 
-    override fun validate(cmd: Command) = cmd.contains("name") && cmd.contains("dob") && cmd.contains("category") &&
-        cmd.contains("breed") && cmd.contains("tags") && cmd.contains("vaccines")
+    fun insertBreed(breed: String) = insertIfNotExist("breeds", breed)
+
+    fun insertTag(tag: String) = insertIfNotExist("tags", tag)
+
+    fun insertVaccine(vaccine: String) = insertIfNotExist("vaccines", vaccine)
+
+    fun insertTagsReference(tags: List<String>) = tags.toFlux().flatMap(::insertTag).collectList()
+
+    fun insertVaccinesReference(vaccines: List<String>) = vaccines.toFlux().flatMap(::insertVaccine).collectList()
+
+    fun insertPet(cmd: Command) = databaseClient.execute(
+        """
+        INSERT INTO pets (id, name, category, breed, dob)
+        SELECT
+            :id,
+            :name,
+            categories.id as category_id,
+            breeds.id     as breed_id,
+           :dob
+        FROM
+            categories,
+            breeds
+        WHERE
+            categories.name = :category_name AND
+                breeds.name = :breed_name
+    """
+    )
+        .bind("id", cmd.id.toString())
+        .bind("name", cmd.get("name"))
+        .bind("dob", Instant.parse(cmd.get("dob")))
+        .bind("category_name", cmd.get("category"))
+        .bind("breed_name", cmd.get("breed"))
+        .fetch()
+        .rowsUpdated()
+
+    fun insertVaccines(id: String, vaccines: List<String>) = databaseClient.execute(
+        """
+                            INSERT
+                            INTO pets_vaccines(id_pet, id_vaccine)
+                            SELECT :pet_id, id
+                            FROM vaccines
+                            WHERE name IN (:vaccines)
+                        """
+    )
+        .bind("pet_id", id)
+        .bind("vaccines", vaccines)
+        .then()
+
+    fun insertTags(id: String, tags: List<String>) = databaseClient.execute(
+        """
+                            INSERT
+                            INTO pets_tags(id_pet, id_tag)
+                            SELECT :pet_id, id
+                            FROM tags
+                            WHERE name IN (:tags)
+                        """
+    )
+        .bind("pet_id", id)
+        .bind("tags", tags)
+        .then()
+
+    fun insertReferences(category: String, breed: String, vaccines: List<String>, tags: List<String>) =
+        insertCategory(category).then(
+            insertBreed(breed).then(
+                insertVaccinesReference(vaccines).then(
+                    insertTagsReference(tags)
+                )
+            )
+        )
 
     fun insertIfNotExist(table: String, name: String) = databaseClient.execute(
         """
@@ -57,80 +127,9 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient) : CommandPro
         .bind("name_value", name)
         .fetch()
         .rowsUpdated()
-        .flatMap {
-            databaseClient.select().from(table)
-                .project("id")
-                .matching(where("name").isEquals(name))
-                .fetch().one()
-                .map { it.getValue("id") as Int }
-        }.onErrorMap {
-            CreatePetException("error inserting '$name' in table '$table'", it)
-        }
 
-    fun insertCategory(name: String) = insertIfNotExist("categories", name)
+    override fun getCommandName() = "pet_create"
 
-    fun insertBreed(name: String) = insertIfNotExist("breeds", name)
-
-    fun insertPet(cmd: Command, categoryId: Int, breedId: Int) = databaseClient.insert().into("pets")
-        .value("id", cmd.id.toString())
-        .value("name", cmd.get("name"))
-        .value("dob", Instant.parse(cmd.get("dob")))
-        .value("category", categoryId)
-        .value("breed", breedId)
-        .then().onErrorMap {
-            CreatePetException("error inserting pet", it)
-        }
-
-    fun deletePet(cmd: Command) = databaseClient.delete().from("pets")
-        .matching(where("id").isEquals(cmd.id.toString())).then().onErrorMap {
-            CreatePetException("error deleting pet", it)
-        }
-
-    fun insertTag(name: String) = insertIfNotExist("tags", name)
-
-    fun addTagToPet(petId: UUID, tag: String) = insertTag(tag).flatMap {
-        databaseClient.insert().into("pets_tags")
-            .value("id_pet", petId.toString())
-            .value("id_tag", it)
-            .then().onErrorMap { err ->
-                CreatePetException("error adding tag to pet", err)
-            }
-    }
-
-    fun addTagsToPet(petId: UUID, tags: List<String>) = tags.toFlux().flatMap {
-        addTagToPet(petId, it)
-    }.collectList().flatMap {
-        Mono.empty<Void>()
-    }.onErrorMap {
-        CreatePetException("error adding tags to pet", it)
-    }
-
-    fun deleteTags(cmd: Command) = databaseClient.delete().from("pets_tags")
-        .matching(where("id_pet").isEquals(cmd.id.toString())).then().onErrorMap {
-            CreatePetException("error deleting tags", it)
-        }
-
-    fun insertVaccine(name: String) = insertIfNotExist("vaccines", name)
-
-    fun addVaccineToPet(petId: UUID, vaccine: String) = insertVaccine(vaccine).flatMap {
-        databaseClient.insert().into("pets_vaccines")
-            .value("id_pet", petId.toString())
-            .value("id_vaccine", it)
-            .then().onErrorMap { err ->
-                CreatePetException("error adding vaccine to pet", err)
-            }
-    }
-
-    fun addVaccinesToPet(petId: UUID, vaccines: List<String>) = vaccines.toFlux().flatMap {
-        addVaccineToPet(petId, it)
-    }.collectList().flatMap {
-        Mono.empty<Void>()
-    }.onErrorMap {
-        CreatePetException("error adding vaccines to pet", it)
-    }
-
-    fun deleteVaccines(cmd: Command) = databaseClient.delete().from("pets_vaccines")
-        .matching(where("id_pet").isEquals(cmd.id.toString())).then().onErrorMap {
-            CreatePetException("error deleting vaccines", it)
-        }
+    override fun validate(cmd: Command) = cmd.contains("name") && cmd.contains("dob") && cmd.contains("category") &&
+        cmd.contains("breed") && cmd.contains("tags") && cmd.contains("vaccines")
 }
