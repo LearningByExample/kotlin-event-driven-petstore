@@ -2,9 +2,7 @@
 
 package org.learning.by.example.petstore.petstream.service.processor
 
-import io.r2dbc.spi.ConnectionFactory
 import org.learning.by.example.petstore.command.Command
-import org.springframework.data.r2dbc.connectionfactory.R2dbcTransactionManager
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.stereotype.Service
 import org.springframework.transaction.reactive.TransactionalOperator
@@ -13,30 +11,30 @@ import reactor.kotlin.core.publisher.toFlux
 import java.time.Instant
 
 @Service
-class CreatePetCommandProcessor(val databaseClient: DatabaseClient, val connectionFactory: ConnectionFactory) :
-    CommandProcessor {
+class CreatePetCommandProcessor(
+    val databaseClient: DatabaseClient,
+    val transactionalOperator: TransactionalOperator
+) : CommandProcessor {
     override fun process(cmd: Command): Mono<Void> {
         val category = cmd.get<String>("category")
         val breed = cmd.get<String>("breed")
         val vaccines = cmd.getList<String>("vaccines")
         val tags = if (cmd.contains("tags")) cmd.getList<String>("tags") else listOf()
 
-        val operator = TransactionalOperator.create(R2dbcTransactionManager(connectionFactory))
-
-        return insertReferences(category, breed, vaccines, tags).then(
-            insertPet(cmd).then(
-                insertVaccines(cmd.id.toString(), vaccines).then(
-                    if (tags.isNotEmpty())
-                        insertTags(cmd.id.toString(), tags)
-                    else
-                        Mono.empty<Void>()
+        return transactionalOperator.transactional(
+            insertReferences(category, breed, vaccines, tags).then(
+                insertPet(cmd).then(
+                    insertVaccines(cmd.id.toString(), vaccines).then(
+                        if (tags.isNotEmpty())
+                            insertTags(cmd.id.toString(), tags)
+                        else
+                            Mono.empty<Void>()
+                    )
                 )
-            )
-        )
-            .`as`(operator::transactional)
-            .onErrorMap {
+            ).onErrorMap {
                 CreatePetException("error processing command : '$cmd'", it)
             }
+        )
     }
 
     fun insertCategory(category: String) = insertIfNotExist("categories", category)
@@ -66,7 +64,7 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient, val connecti
         WHERE
             categories.name = :category_name AND
                 breeds.name = :breed_name
-    """
+        """
     )
         .bind("id", cmd.id.toString())
         .bind("name", cmd.get("name"))
@@ -78,12 +76,12 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient, val connecti
 
     fun insertVaccines(id: String, vaccines: List<String>) = databaseClient.execute(
         """
-                            INSERT
-                            INTO pets_vaccines(id_pet, id_vaccine)
-                            SELECT :pet_id, id
-                            FROM vaccines
-                            WHERE name IN (:vaccines)
-                        """
+        INSERT
+        INTO pets_vaccines(id_pet, id_vaccine)
+        SELECT :pet_id, id
+        FROM vaccines
+        WHERE name IN (:vaccines)
+        """
     )
         .bind("pet_id", id)
         .bind("vaccines", vaccines)
@@ -91,12 +89,12 @@ class CreatePetCommandProcessor(val databaseClient: DatabaseClient, val connecti
 
     fun insertTags(id: String, tags: List<String>) = databaseClient.execute(
         """
-                            INSERT
-                            INTO pets_tags(id_pet, id_tag)
-                            SELECT :pet_id, id
-                            FROM tags
-                            WHERE name IN (:tags)
-                        """
+        INSERT
+        INTO pets_tags(id_pet, id_tag)
+        SELECT :pet_id, id
+        FROM tags
+        WHERE name IN (:tags)
+        """
     )
         .bind("pet_id", id)
         .bind("tags", tags)

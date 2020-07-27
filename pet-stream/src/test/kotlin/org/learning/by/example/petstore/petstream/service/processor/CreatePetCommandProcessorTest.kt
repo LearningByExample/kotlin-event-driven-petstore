@@ -1,8 +1,12 @@
 @file:Suppress("DEPRECATION")
-
 package org.learning.by.example.petstore.petstream.service.processor
 
-import org.assertj.core.api.Assertions.assertThat
+import com.nhaarman.mockitokotlin2.any
+import com.nhaarman.mockitokotlin2.doReturn
+import com.nhaarman.mockitokotlin2.reset
+import com.nhaarman.mockitokotlin2.whenever
+import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -11,9 +15,12 @@ import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.petstream.test.DatabaseTest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.isEquals
 import org.springframework.data.r2dbc.query.Criteria.where
+import reactor.core.publisher.Mono
+import reactor.kotlin.test.expectError
 import reactor.test.StepVerifier
 import java.time.Instant
 import java.time.LocalDateTime
@@ -21,10 +28,15 @@ import java.time.ZoneOffset
 import java.util.UUID
 
 @SpringBootTest
-internal class CreatePetCommandProcessorTest(
-    @Autowired val databaseClient: DatabaseClient,
-    @Autowired val createPetCommandProcessor: CreatePetCommandProcessor
-) : DatabaseTest() {
+internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) : DatabaseTest() {
+    @SpyBean
+    lateinit var createPetCommandProcessor: CreatePetCommandProcessor
+
+    @AfterEach
+    fun tearDown() {
+        reset(createPetCommandProcessor)
+    }
+
     @Test
     fun `should process create command and save a pet in the database`() {
         val cmd = command("pet_create") {
@@ -82,15 +94,15 @@ internal class CreatePetCommandProcessorTest(
                 .matching(where("id").isEquals(cmd.id.toString()))
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
-            assertThat(it["id"]).isEqualTo(cmd.id.toString())
-            assertThat(it["name"]).isEqualTo(cmd.get("name"))
-            assertThat(it["dob"]).isEqualTo(
+            Assertions.assertThat(it["id"]).isEqualTo(cmd.id.toString())
+            Assertions.assertThat(it["name"]).isEqualTo(cmd.get("name"))
+            Assertions.assertThat(it["dob"]).isEqualTo(
                 LocalDateTime.ofInstant(
                     Instant.parse(cmd.get("dob")),
                     ZoneOffset.systemDefault()
                 )
             )
-            assertThat(it["category"] as Int).isNotZero()
+            Assertions.assertThat(it["category"] as Int).isNotZero()
             verifyCategoryIsCorrect(it["category"] as Int, cmd.get("category"))
             verifyBreedIsCorrect(it["breed"] as Int, cmd.get("breed"))
         }.verifyComplete()
@@ -103,7 +115,7 @@ internal class CreatePetCommandProcessorTest(
                 .matching(where("id").isEquals(id))
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
-            assertThat(it["name"]).isEqualTo(value)
+            Assertions.assertThat(it["name"]).isEqualTo(value)
         }.verifyComplete()
     }
 
@@ -131,7 +143,7 @@ internal class CreatePetCommandProcessorTest(
                 .bind("name", tag)
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
-            assertThat(it["name"]).isEqualTo(tag)
+            Assertions.assertThat(it["name"]).isEqualTo(tag)
         }.verifyComplete()
     }
 
@@ -162,7 +174,7 @@ internal class CreatePetCommandProcessorTest(
                 .bind("name", vaccine)
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
-            assertThat(it["name"]).isEqualTo(vaccine)
+            Assertions.assertThat(it["name"]).isEqualTo(vaccine)
         }.verifyComplete()
     }
 
@@ -256,7 +268,119 @@ internal class CreatePetCommandProcessorTest(
         )
     ).map {
         DynamicTest.dynamicTest(it.case) {
-            assertThat(createPetCommandProcessor.validate(it.cmd)).isEqualTo(it.expect)
+            Assertions.assertThat(createPetCommandProcessor.validate(it.cmd)).isEqualTo(it.expect)
         }
+    }
+
+    @Test
+    fun `should return an exception when insert reference fails`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value Instant.now().toString()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        doReturn(Mono.error<Void>(RuntimeException("something went wrong"))).whenever(createPetCommandProcessor)
+            .insertReferences(any(), any(), any(), any())
+
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `should return an exception when insert tags fails`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value Instant.now().toString()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        doReturn(Mono.error<Void>(RuntimeException("something went wrong"))).whenever(createPetCommandProcessor)
+            .insertTags(any(), any())
+
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `should return an exception when insert vaccines fails`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value Instant.now().toString()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        doReturn(Mono.error<Void>(RuntimeException("something went wrong"))).whenever(createPetCommandProcessor)
+            .insertVaccines(any(), any())
+
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    @Test
+    fun `should return an exception when insert pet fails`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value Instant.now().toString()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        doReturn(Mono.error<Void>(RuntimeException("something went wrong"))).whenever(createPetCommandProcessor)
+            .insertPet(any())
+
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
+            .expectError<CreatePetException>()
+            .verify()
+
+        verifyPetIsNotSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasNotVaccines(cmd)
+    }
+
+    fun verifyPetIsNotSaved(cmd: Command) {
+        StepVerifier.create(
+            databaseClient
+                .select().from("pets")
+                .project("id")
+                .matching(where("id").isEquals(cmd.id.toString()))
+                .fetch().one()
+        ).expectNextCount(0).verifyComplete()
+    }
+
+    fun verifyPetHasNotVaccines(cmd: Command) {
+        StepVerifier.create(
+            databaseClient
+                .select().from("pets_vaccines")
+                .project("id_pet")
+                .matching(where("id_pet").isEquals(cmd.id.toString()))
+                .fetch().all()
+        ).expectNextCount(0).verifyComplete()
     }
 }
