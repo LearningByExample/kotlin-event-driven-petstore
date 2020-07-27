@@ -16,6 +16,7 @@ class CreatePetCommandProcessor(
     val transactionalOperator: TransactionalOperator
 ) : CommandProcessor {
     override fun process(cmd: Command): Mono<Void> {
+        val id = cmd.id.toString()
         val category = cmd.get<String>("category")
         val breed = cmd.get<String>("breed")
         val vaccines = cmd.getList<String>("vaccines")
@@ -24,11 +25,8 @@ class CreatePetCommandProcessor(
         return transactionalOperator.transactional(
             insertReferences(category, breed, vaccines, tags).then(
                 insertPet(cmd).then(
-                    insertVaccines(cmd.id.toString(), vaccines).then(
-                        if (tags.isNotEmpty())
-                            insertTags(cmd.id.toString(), tags)
-                        else
-                            Mono.empty<Void>()
+                    insertVaccines(id, vaccines).then(
+                        insertTags(id, tags)
                     )
                 )
             ).onErrorMap {
@@ -87,7 +85,7 @@ class CreatePetCommandProcessor(
         .bind("vaccines", vaccines)
         .then()
 
-    fun insertTags(id: String, tags: List<String>) = databaseClient.execute(
+    fun insertTags(id: String, tags: List<String>) = if (tags.isNotEmpty()) databaseClient.execute(
         """
         INSERT
         INTO pets_tags(id_pet, id_tag)
@@ -99,6 +97,7 @@ class CreatePetCommandProcessor(
         .bind("pet_id", id)
         .bind("tags", tags)
         .then()
+    else Mono.empty()
 
     fun insertReferences(category: String, breed: String, vaccines: List<String>, tags: List<String>) =
         insertCategory(category).then(
