@@ -9,6 +9,7 @@ import org.learning.by.example.petstore.command.producer.CommandsProducerConfig
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.r2dbc.core.DatabaseClient
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.KafkaContainer
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit
 
 @SpringBootTest
 @Testcontainers
+@DirtiesContext
 class FromKafkaToPostgresSqlTest(
     @Autowired val producer: CommandsProducer,
     @Autowired val databaseClient: DatabaseClient

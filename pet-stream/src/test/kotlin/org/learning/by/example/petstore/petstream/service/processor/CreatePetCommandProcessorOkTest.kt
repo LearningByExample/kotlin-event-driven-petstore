@@ -1,12 +1,8 @@
 @file:Suppress("DEPRECATION")
+
 package org.learning.by.example.petstore.petstream.service.processor
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.doReturn
-import com.nhaarman.mockitokotlin2.reset
-import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
@@ -15,12 +11,9 @@ import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.petstream.test.DatabaseTest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.isEquals
 import org.springframework.data.r2dbc.query.Criteria.where
-import reactor.core.publisher.Mono
-import reactor.kotlin.test.expectError
 import reactor.test.StepVerifier
 import java.time.Instant
 import java.time.LocalDateTime
@@ -28,54 +21,10 @@ import java.time.ZoneOffset
 import java.util.UUID
 
 @SpringBootTest
-internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: DatabaseClient) : DatabaseTest() {
-    @SpyBean
-    lateinit var createPetCommandProcessor: CreatePetCommandProcessor
-
-    @AfterEach
-    fun tearDown() {
-        reset(createPetCommandProcessor)
-    }
-
-    @Test
-    fun `should process create command and save a pet in the database`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
-        }
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectSubscription()
-            .verifyComplete()
-
-        verifyPetIsSaved(cmd)
-        verifyPetHasTags(cmd.id, cmd.getList("tags"))
-        verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
-    }
-
-    @Test
-    fun `should process create command and save a pet without tags in the database`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-        }
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectSubscription()
-            .verifyComplete()
-
-        verifyPetIsSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
-    }
-
+internal class CreatePetCommandProcessorOkTest(
+    @Autowired val databaseClient: DatabaseClient,
+    @Autowired val createPetCommandProcessor: CreatePetCommandProcessor
+) : DatabaseTest() {
     fun verifyPetHasNotTags(cmd: Command) {
         StepVerifier.create(
             databaseClient
@@ -183,6 +132,45 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
         }
     }
 
+    @Test
+    fun `should process create command and save a pet in the database`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value Instant.now().toString()
+            "tags" values listOf("tag1", "tag2", "tag3")
+        }
+
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
+            .expectSubscription()
+            .verifyComplete()
+
+        verifyPetIsSaved(cmd)
+        verifyPetHasTags(cmd.id, cmd.getList("tags"))
+        verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
+    }
+
+    @Test
+    fun `should process create command and save a pet without tags in the database`() {
+        val cmd = command("pet_create") {
+            "name" value "name"
+            "category" value "category"
+            "breed" value "breed"
+            "vaccines" values listOf("vaccine1", "vaccine2")
+            "dob" value Instant.now().toString()
+        }
+
+        StepVerifier.create(createPetCommandProcessor.process(cmd))
+            .expectSubscription()
+            .verifyComplete()
+
+        verifyPetIsSaved(cmd)
+        verifyPetHasNotTags(cmd)
+        verifyPetHasVaccines(cmd.id, cmd.getList("vaccines"))
+    }
+
     data class ValidationCase(val case: String, val cmd: Command, val expect: Boolean)
 
     @TestFactory
@@ -269,117 +257,5 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
         DynamicTest.dynamicTest(it.case) {
             Assertions.assertThat(createPetCommandProcessor.validate(it.cmd)).isEqualTo(it.expect)
         }
-    }
-
-    @Test
-    fun `should return an exception when insert reference fails`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
-        }
-
-        doReturn(Mono.error<Void>(RuntimeException("something went wrong"))).whenever(createPetCommandProcessor)
-            .insertReferences(any(), any(), any(), any())
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
-    }
-
-    @Test
-    fun `should return an exception when insert tags fails`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
-        }
-
-        doReturn(Mono.error<Void>(RuntimeException("something went wrong"))).whenever(createPetCommandProcessor)
-            .insertTags(any(), any())
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
-    }
-
-    @Test
-    fun `should return an exception when insert vaccines fails`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
-        }
-
-        doReturn(Mono.error<Void>(RuntimeException("something went wrong"))).whenever(createPetCommandProcessor)
-            .insertVaccines(any(), any())
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
-    }
-
-    @Test
-    fun `should return an exception when insert pet fails`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
-        }
-
-        doReturn(Mono.error<Void>(RuntimeException("something went wrong"))).whenever(createPetCommandProcessor)
-            .insertPet(any())
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
-    }
-
-    fun verifyPetIsNotSaved(cmd: Command) {
-        StepVerifier.create(
-            databaseClient
-                .select().from("pets")
-                .project("id")
-                .matching(where("id").isEquals(cmd.id.toString()))
-                .fetch().one()
-        ).expectNextCount(0).verifyComplete()
-    }
-
-    fun verifyPetHasNotVaccines(cmd: Command) {
-        StepVerifier.create(
-            databaseClient
-                .select().from("pets_vaccines")
-                .project("id_pet")
-                .matching(where("id_pet").isEquals(cmd.id.toString()))
-                .fetch().all()
-        ).expectNextCount(0).verifyComplete()
     }
 }

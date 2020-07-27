@@ -7,7 +7,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.learning.by.example.petstore.petstream.service.sink.CommandSink
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.test.annotation.DirtiesContext
 
+@DirtiesContext
 abstract class BasicTest {
     @MockBean
     lateinit var commandSink: CommandSink
