@@ -17,8 +17,8 @@ class PetStreamApplication {
         R2dbcTransactionManager(connectionFactory)
 
     @Bean
-    fun transactionalOperator(connectionFactory: ConnectionFactory) =
-        TransactionalOperator.create(R2dbcTransactionManager(connectionFactory))
+    fun transactionalOperator(reactiveTransactionManager: ReactiveTransactionManager) =
+        TransactionalOperator.create(reactiveTransactionManager)
 }
 
 fun main(args: Array<String>) {
