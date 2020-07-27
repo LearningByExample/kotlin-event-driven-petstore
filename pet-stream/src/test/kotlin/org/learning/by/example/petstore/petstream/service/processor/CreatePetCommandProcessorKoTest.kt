@@ -1,7 +1,9 @@
 @file:Suppress("DEPRECATION")
+
 package org.learning.by.example.petstore.petstream.service.processor
 
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.DynamicTest
+import org.junit.jupiter.api.TestFactory
 import org.learning.by.example.petstore.command.Command
 import org.learning.by.example.petstore.command.dsl.command
 import org.learning.by.example.petstore.petstream.test.DatabaseTest
@@ -49,103 +51,114 @@ internal class CreatePetCommandProcessorKoTest(
         ).expectNextCount(0).verifyComplete()
     }
 
-    @Test
-    fun `should return an exception when insert category fails`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value ""
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
+    data class TestCase(val name: String, val cmd: Command)
+
+    @TestFactory
+    fun `we should get errors from the database and have not details saved`() = listOf(
+        TestCase(
+            name = "insert category fails",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value ""
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value Instant.now().toString()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            }
+        ),
+        TestCase(
+            name = "insert category with no tags fails",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value ""
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value Instant.now().toString()
+            }
+        ),
+        TestCase(
+            name = "insert bread fails",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value ""
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value Instant.now().toString()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            }
+        ),
+        TestCase(
+            name = "insert bread with no tags fails",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value ""
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value Instant.now().toString()
+            }
+        ),
+        TestCase(
+            name = "insert tags fails",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value Instant.now().toString()
+                "tags" values listOf("tag1", "", "tag3")
+            }
+        ),
+        TestCase(
+            name = "insert vaccines fails",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("", "vaccine2")
+                "dob" value Instant.now().toString()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            }
+        ),
+        TestCase(
+            name = "insert vaccines with no tags fails",
+            cmd = command("pet_create") {
+                "name" value "name"
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("", "vaccine2")
+                "dob" value Instant.now().toString()
+            }
+        ),
+        TestCase(
+            name = "insert pet fails",
+            cmd = command("pet_create") {
+                "name" value ""
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value Instant.now().toString()
+                "tags" values listOf("tag1", "tag2", "tag3")
+            }
+        ),
+        TestCase(
+            name = "insert pet with no tag fails",
+            cmd = command("pet_create") {
+                "name" value ""
+                "category" value "category"
+                "breed" value "breed"
+                "vaccines" values listOf("vaccine1", "vaccine2")
+                "dob" value Instant.now().toString()
+            }
+        )
+    ).map {
+        DynamicTest.dynamicTest(it.name) {
+            StepVerifier.create(createPetCommandProcessor.process(it.cmd))
+                .expectError<CreatePetException>()
+                .verify()
+
+            verifyPetIsNotSaved(it.cmd)
+            verifyPetHasNotTags(it.cmd)
+            verifyPetHasNotVaccines(it.cmd)
         }
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
-    }
-
-    @Test
-    fun `should return an exception when insert breed fails`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value ""
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
-        }
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
-    }
-
-    @Test
-    fun `should return an exception when insert tags fails`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "", "tag3")
-        }
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
-    }
-
-    @Test
-    fun `should return an exception when insert vaccines fails`() {
-        val cmd = command("pet_create") {
-            "name" value "name"
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
-        }
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
-    }
-
-    @Test
-    fun `should return an exception when insert pet fails`() {
-        val cmd = command("pet_create") {
-            "name" value ""
-            "category" value "category"
-            "breed" value "breed"
-            "vaccines" values listOf("vaccine1", "vaccine2")
-            "dob" value Instant.now().toString()
-            "tags" values listOf("tag1", "tag2", "tag3")
-        }
-
-        StepVerifier.create(createPetCommandProcessor.process(cmd))
-            .expectError<CreatePetException>()
-            .verify()
-
-        verifyPetIsNotSaved(cmd)
-        verifyPetHasNotTags(cmd)
-        verifyPetHasNotVaccines(cmd)
     }
 }
