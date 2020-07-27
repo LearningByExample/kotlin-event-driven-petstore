@@ -49,12 +49,12 @@ class CreatePetCommandProcessor(
 
     fun insertPet(cmd: Command) = databaseClient.execute(
         """
-        INSERT INTO pets (id, name, category, breed, dob)
+        INSERT INTO pets (id, name, id_category, id_breed, dob)
         SELECT
             :id,
             :name,
-            categories.id as category_id,
-            breeds.id     as breed_id,
+            categories.id as id_category,
+            breeds.id     as id_breed,
            :dob
         FROM
             categories,

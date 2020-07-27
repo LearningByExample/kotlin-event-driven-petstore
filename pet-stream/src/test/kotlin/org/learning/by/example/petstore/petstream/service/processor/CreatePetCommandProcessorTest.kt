@@ -90,7 +90,7 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
         StepVerifier.create(
             databaseClient
                 .select().from("pets")
-                .project("id", "name", "dob", "category", "breed")
+                .project("id", "name", "dob", "id_category", "id_breed")
                 .matching(where("id").isEquals(cmd.id.toString()))
                 .fetch().one()
         ).expectSubscription().consumeNextWith {
@@ -102,9 +102,8 @@ internal class CreatePetCommandProcessorTest(@Autowired val databaseClient: Data
                     ZoneOffset.systemDefault()
                 )
             )
-            Assertions.assertThat(it["category"] as Int).isNotZero()
-            verifyCategoryIsCorrect(it["category"] as Int, cmd.get("category"))
-            verifyBreedIsCorrect(it["breed"] as Int, cmd.get("breed"))
+            verifyCategoryIsCorrect(it["id_category"] as Int, cmd.get("category"))
+            verifyBreedIsCorrect(it["id_breed"] as Int, cmd.get("breed"))
         }.verifyComplete()
     }
 
