@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.data.r2dbc.core.isEquals
+import org.springframework.data.r2dbc.core.isIn
 import org.springframework.data.r2dbc.query.Criteria.where
 import reactor.kotlin.test.expectError
 import reactor.test.StepVerifier
@@ -50,6 +51,28 @@ internal class CreatePetCommandProcessorKoTest(
                 .fetch().all()
         ).expectNextCount(0).verifyComplete()
     }
+
+    fun verifyReferenceIsNoSaved(table: String, values: List<String>) {
+        StepVerifier.create(
+            databaseClient
+                .select().from(table)
+                .project("name")
+                .matching(where("name").isIn(values))
+                .fetch().all()
+        ).expectNextCount(0).verifyComplete()
+    }
+
+    fun verifyVaccinesReferencesAreNotSaved(cmd: Command) =
+        verifyReferenceIsNoSaved("vaccines", cmd.getList("vaccines"))
+
+    fun verifyTagsReferencesAreNotSaved(cmd: Command) =
+        if (cmd.contains("tags")) verifyReferenceIsNoSaved("tags", cmd.getList("tags")) else Unit
+
+    fun verifyCategoryReferencesIsNotSaved(cmd: Command) =
+        verifyReferenceIsNoSaved("categories", listOf(cmd.get("category")))
+
+    fun verifyBreedReferenceIsNotSaved(cmd: Command) =
+        verifyReferenceIsNoSaved("breeds", listOf(cmd.get("breed")))
 
     data class TestCase(val name: String, val cmd: Command)
 
@@ -155,10 +178,15 @@ internal class CreatePetCommandProcessorKoTest(
             StepVerifier.create(createPetCommandProcessor.process(it.cmd))
                 .expectError<CreatePetException>()
                 .verify()
-
-            verifyPetIsNotSaved(it.cmd)
-            verifyPetHasNotTags(it.cmd)
-            verifyPetHasNotVaccines(it.cmd)
+            with(it.cmd) {
+                verifyPetIsNotSaved(this)
+                verifyPetHasNotTags(this)
+                verifyPetHasNotVaccines(this)
+                verifyTagsReferencesAreNotSaved(this)
+                verifyVaccinesReferencesAreNotSaved(this)
+                verifyCategoryReferencesIsNotSaved(this)
+                verifyBreedReferenceIsNotSaved(this)
+            }
         }
     }
 }
