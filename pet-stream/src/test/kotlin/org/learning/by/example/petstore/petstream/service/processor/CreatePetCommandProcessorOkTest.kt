@@ -36,6 +36,9 @@ internal class CreatePetCommandProcessorOkTest(
     }
 
     fun verifyPetIsSaved(cmd: Command) {
+        var categoryId = 0
+        var breedId = 0
+
         StepVerifier.create(
             databaseClient
                 .select().from("pets")
@@ -51,9 +54,12 @@ internal class CreatePetCommandProcessorOkTest(
                     ZoneOffset.systemDefault()
                 )
             )
-            verifyCategoryIsCorrect(it["id_category"] as Int, cmd.get("category"))
-            verifyBreedIsCorrect(it["id_breed"] as Int, cmd.get("breed"))
+            categoryId = it["id_category"] as Int
+            breedId = it["id_breed"] as Int
         }.verifyComplete()
+
+        verifyCategoryIsCorrect(categoryId, cmd.get("category"))
+        verifyBreedIsCorrect(breedId, cmd.get("breed"))
     }
 
     fun verifyNameMatchValueInTableById(value: String, table: String, id: Int) {
