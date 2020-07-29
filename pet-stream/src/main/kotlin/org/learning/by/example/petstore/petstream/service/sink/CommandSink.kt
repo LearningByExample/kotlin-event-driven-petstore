@@ -13,7 +13,7 @@ class CommandSink(val commandsConsumer: CommandsConsumer, val commandHandler: Co
 
     @PostConstruct
     fun run() {
-        disposable = commandsConsumer.receiveCommands().flatMap(commandHandler::handle).subscribe()
+        disposable = commandsConsumer.receiveCommands(commandHandler::handle).subscribe()
     }
 
     @PreDestroy

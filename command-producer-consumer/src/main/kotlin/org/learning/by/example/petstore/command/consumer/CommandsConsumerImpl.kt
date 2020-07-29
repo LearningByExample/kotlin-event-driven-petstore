@@ -7,11 +7,14 @@ import org.apache.kafka.common.KafkaException
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.learning.by.example.petstore.command.Command
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
 import reactor.kafka.receiver.KafkaReceiver
 import reactor.kafka.receiver.ReceiverOptions
 import reactor.kotlin.core.publisher.toMono
+import reactor.util.retry.Retry
+import java.time.Duration
 
-class CommandsConsumerImpl(commandsConsumerConfig: CommandsConsumerConfig, objectMapper: ObjectMapper) :
+class CommandsConsumerImpl(private val commandsConsumerConfig: CommandsConsumerConfig, objectMapper: ObjectMapper) :
     CommandsConsumer {
     private val options = hashMapOf<String, Any>(
         ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to commandsConsumerConfig.bootstrapServer,
@@ -24,6 +27,8 @@ class CommandsConsumerImpl(commandsConsumerConfig: CommandsConsumerConfig, objec
         CommandsDeserializer.OBJECT_MAPPER_CONFIG_KEY to objectMapper
     )
 
+    private val scheduler = Schedulers.newSingle("sample", true)
+
     private val receiver: KafkaReceiver<String, Command> = KafkaReceiver.create(
         ReceiverOptions.create<String, Command>(options).subscription(setOf(commandsConsumerConfig.topic))
     )
@@ -34,15 +39,22 @@ class CommandsConsumerImpl(commandsConsumerConfig: CommandsConsumerConfig, objec
     // To avoid this we will ask first if we can connect to Kafka. However if we can connect, and them subscribed,
     // we may get disconnected latter, but the KafkaConsumer will handle that recovery automatically and we do not
     // need to check it in the future connections.
-    override fun receiveCommands() = isKafkaAvailable.flatMapMany {
-        receiver.receive().flatMap {
-            val receiverOffset = it.receiverOffset()
-            receiverOffset.acknowledge()
-            it.value().toMono()
-        }
+    override fun receiveCommands(sink: (Command) -> Mono<Void>) = isKafkaAvailable.flatMapMany {
+        receiver.receive()
+            .publishOn(scheduler)
+            .concatMap {
+                sink(it.value()).thenEmpty(it.receiverOffset().commit())
+            }.retryWhen(
+                Retry.backoff(
+                    commandsConsumerConfig.retries.times,
+                    Duration.ofMillis(commandsConsumerConfig.retries.ms)
+                ).filter {
+                    it !is ErrorDeserializingObject
+                }
+            )
     }
 
-    // To known if we can't connect to Kafka we could't just get the topics list, only during a set of configurable
+    // To known if we can't connect to Kafka we couldn't just get the topics list, only during a set of configurable
     // time, if we can't get a response in that time we will return an error.
     //
     // We don't need to check what topics they are since we are not really interested in them.
