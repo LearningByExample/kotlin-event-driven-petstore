@@ -26,5 +26,10 @@ internal class PetRoutesTest(@Autowired val webTestClient: WebTestClient) {
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
             .expectStatus().isEqualTo(HttpStatus.OK)
+            .expectBody()
+            .jsonPath("\$.name").isEqualTo("fluffy")
+            .jsonPath("\$.category").isEqualTo("dog")
+            .jsonPath("\$.breed").isEqualTo("german shepherd")
+            .jsonPath("\$.dob").isEqualTo("2020-06-28T00:00:00.0Z")
     }
 }
