@@ -11,12 +11,15 @@ import org.springframework.http.MediaType
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest
 import org.springframework.mock.web.server.MockServerWebExchange
 import org.springframework.web.reactive.function.server.HandlerStrategies
+import org.springframework.web.reactive.function.server.RouterFunctions
 import org.springframework.web.reactive.function.server.ServerRequest
+import java.util.Collections
 
 @SpringBootTest
 internal class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
     companion object {
-        const val PET_GET_PATH = "/pet/4cb5294b-1034-4bc4-9b3d-542adb232a21"
+        const val PET_GET_PATH = "/pet"
+        const val EXISTING_PET_ID = "4cb5294b-1034-4bc4-9b3d-542adb232a21"
     }
 
     @Test
@@ -25,8 +28,10 @@ internal class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             .get(PET_GET_PATH)
             .accept(MediaType.APPLICATION_JSON)
         val webExchange = MockServerWebExchange.from(httpRequest)
-        val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
+        val pathVariables = Collections.singletonMap("id", EXISTING_PET_ID)
+        webExchange.attributes[RouterFunctions.URI_TEMPLATE_VARIABLES_ATTRIBUTE] = pathVariables
 
+        val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
         petHandler.getPet(request).verify { response, pet: Pet ->
             assertThat(response.statusCode()).isEqualTo(HttpStatus.OK)
             assertThat(response.headers().contentType).isEqualTo(MediaType.APPLICATION_JSON)
