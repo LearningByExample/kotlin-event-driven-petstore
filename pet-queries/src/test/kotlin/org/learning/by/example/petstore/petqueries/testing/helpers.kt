@@ -28,3 +28,11 @@ inline fun <reified Type> Mono<ServerResponse>.verify(crossinline verifyFun: (Se
         }
         .verifyComplete()
 }
+
+fun Mono<ServerResponse>.verifyEmpty(verifyFun: (ServerResponse) -> Unit) {
+    StepVerifier.create(this)
+        .consumeNextWith {
+            verifyFun(it)
+        }
+        .verifyComplete()
+}
