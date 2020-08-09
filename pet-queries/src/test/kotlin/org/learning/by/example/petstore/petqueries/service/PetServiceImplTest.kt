@@ -12,6 +12,7 @@ import java.util.UUID
 internal class PetServiceImplTest(@Autowired val petService: PetService) : DatabaseTest() {
     companion object {
         const val EXISTING_UUID = "4cb5294b-1034-4bc4-9b3d-542adb232a21"
+        const val NOT_EXISTING_UUID = "44b5294b-1034-4b00-9b3d-542adb232a21"
     }
 
     @Test
@@ -24,6 +25,14 @@ internal class PetServiceImplTest(@Autowired val petService: PetService) : Datab
                 assertThat(it.breed).isEqualTo("german shepherd")
                 assertThat(it.dob).isEqualTo("2020-08-09T10:35:07.981845Z")
             }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `we should not find a pet in the database`() {
+        StepVerifier.create(petService.findPetById(UUID.fromString(NOT_EXISTING_UUID)))
+            .expectSubscription()
+            .expectNextCount(0)
             .verifyComplete()
     }
 }

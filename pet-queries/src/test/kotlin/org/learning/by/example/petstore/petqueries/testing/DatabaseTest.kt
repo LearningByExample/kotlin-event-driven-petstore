@@ -1,5 +1,6 @@
 package org.learning.by.example.petstore.petqueries.testing
 
+import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
@@ -7,6 +8,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
+@DirtiesContext
 abstract class DatabaseTest {
     companion object {
         @Container
