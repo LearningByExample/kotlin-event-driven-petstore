@@ -1,6 +1,7 @@
 package org.learning.by.example.petstore.petqueries.service
 
 import org.learning.by.example.petstore.petqueries.model.Pet
+import org.slf4j.LoggerFactory
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -13,6 +14,7 @@ import java.util.UUID
 @Service
 class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
     companion object {
+        val LOGGER = LoggerFactory.getLogger(PetServiceImpl::class.java)!!
         const val SQL_SELECT_PET =
             """
             SELECT
@@ -30,7 +32,8 @@ class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
             AND
                  pets.id_breed = breeds.id
         """
-        const val SQL_SELECT_VACCINES = """
+        const val SQL_SELECT_VACCINES =
+            """
             SELECT
                 vaccines.name
             FROM
@@ -52,7 +55,14 @@ class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
                 val breed = it.getValue("breed") as String
                 val dob = it.getValue("dob") as LocalDateTime
                 val dobUtcString = dob.toInstant(ZoneOffset.UTC).toString()
-                Pet(name, category, breed, dobUtcString).toMono()
+                getVaccines(id).collectList().flatMap { vaccines ->
+                    if (vaccines.isNotEmpty()) {
+                        Pet(name, category, breed, dobUtcString, vaccines).toMono()
+                    } else {
+                        LOGGER.warn("The pet with id $id was found without vaccines.")
+                        Mono.empty()
+                    }
+                }
             }
     }
 

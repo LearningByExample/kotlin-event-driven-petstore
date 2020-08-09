@@ -4,5 +4,6 @@ data class Pet(
     val name: String,
     val category: String,
     val breed: String,
-    val dob: String
+    val dob: String,
+    val vaccines: List<String>
 )

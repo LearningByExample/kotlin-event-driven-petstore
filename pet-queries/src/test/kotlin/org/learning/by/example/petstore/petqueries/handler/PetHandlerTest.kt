@@ -46,7 +46,10 @@ internal class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             Mono.empty<Pet>()
         ).whenever(petService).findPetById(any())
         doReturn(
-            Pet("fluffy", "dog", "german shepherd", "2020-06-28T00:00:00.0Z").toMono()
+            Pet(
+                "fluffy", "dog", "german shepherd", "2020-06-28T00:00:00.0Z",
+                listOf("vaccine1", "vaccine2", "vaccine3")
+            ).toMono()
         ).whenever(petService).findPetById(UUID.fromString(EXISTING_PET_ID))
     }
 
@@ -73,6 +76,8 @@ internal class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
             assertThat(pet.category).isEqualTo("dog")
             assertThat(pet.breed).isEqualTo("german shepherd")
             assertThat(pet.dob).isEqualTo("2020-06-28T00:00:00.0Z")
+            assertThat(pet.vaccines).hasSize(3)
+            assertThat(pet.vaccines).containsAll(listOf("vaccine1", "vaccine2", "vaccine3"))
         }
 
         verify(petService).findPetById(UUID.fromString(EXISTING_PET_ID))
