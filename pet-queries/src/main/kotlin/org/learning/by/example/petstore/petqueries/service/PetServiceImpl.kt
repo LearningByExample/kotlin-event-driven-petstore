@@ -3,6 +3,7 @@ package org.learning.by.example.petstore.petqueries.service
 import org.learning.by.example.petstore.petqueries.model.Pet
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import java.time.LocalDateTime
@@ -29,7 +30,18 @@ class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
             AND
                  pets.id_breed = breeds.id
         """
+        const val SQL_SELECT_VACCINES = """
+            SELECT
+                vaccines.name
+            FROM
+                pets_vaccines, vaccines
+            WHERE
+                pets_vaccines.id_pet = :id
+            AND
+                pets_vaccines.id_vaccine = vaccines.id
+        """
     }
+
     override fun findPetById(id: UUID): Mono<Pet> {
         return databaseClient.execute(SQL_SELECT_PET)
             .bind("id", id.toString())
@@ -41,6 +53,15 @@ class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
                 val dob = it.getValue("dob") as LocalDateTime
                 val dobUtcString = dob.toInstant(ZoneOffset.UTC).toString()
                 Pet(name, category, breed, dobUtcString).toMono()
+            }
+    }
+
+    fun getVaccines(id: UUID): Flux<String> {
+        return databaseClient.execute(SQL_SELECT_VACCINES)
+            .bind("id", id.toString())
+            .fetch().all()
+            .flatMap {
+                (it.getValue("name") as String).toMono()
             }
     }
 }

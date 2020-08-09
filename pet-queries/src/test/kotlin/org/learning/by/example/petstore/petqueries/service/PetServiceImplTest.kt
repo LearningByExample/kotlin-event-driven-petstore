@@ -9,7 +9,7 @@ import reactor.test.StepVerifier
 import java.util.UUID
 
 @SpringBootTest
-internal class PetServiceImplTest(@Autowired val petService: PetService) : DatabaseTest() {
+internal class PetServiceImplTest(@Autowired val petServiceImpl: PetServiceImpl) : DatabaseTest() {
     companion object {
         const val EXISTING_UUID = "4cb5294b-1034-4bc4-9b3d-542adb232a21"
         const val NOT_EXISTING_UUID = "44b5294b-1034-4b00-9b3d-542adb232a21"
@@ -17,7 +17,7 @@ internal class PetServiceImplTest(@Autowired val petService: PetService) : Datab
 
     @Test
     fun `we should find a pet in the database`() {
-        StepVerifier.create(petService.findPetById(UUID.fromString(EXISTING_UUID)))
+        StepVerifier.create(petServiceImpl.findPetById(UUID.fromString(EXISTING_UUID)))
             .expectSubscription()
             .consumeNextWith {
                 assertThat(it.name).isEqualTo("fluffy")
@@ -30,7 +30,23 @@ internal class PetServiceImplTest(@Autowired val petService: PetService) : Datab
 
     @Test
     fun `we should not find a pet in the database`() {
-        StepVerifier.create(petService.findPetById(UUID.fromString(NOT_EXISTING_UUID)))
+        StepVerifier.create(petServiceImpl.findPetById(UUID.fromString(NOT_EXISTING_UUID)))
+            .expectSubscription()
+            .expectNextCount(0)
+            .verifyComplete()
+    }
+
+    @Test
+    fun `we should get the list of vaccines for a pet`() {
+        StepVerifier.create(petServiceImpl.getVaccines(UUID.fromString(EXISTING_UUID)))
+            .expectSubscription()
+            .expectNext("vaccine1", "vaccine2", "vaccine3")
+            .verifyComplete()
+    }
+
+    @Test
+    fun `we should not find vaccines for a pet`() {
+        StepVerifier.create(petServiceImpl.getVaccines(UUID.fromString(NOT_EXISTING_UUID)))
             .expectSubscription()
             .expectNextCount(0)
             .verifyComplete()

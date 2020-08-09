@@ -29,11 +29,11 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
         )
         .fetch().one().map { it.getOrDefault("table_name", "") == name }.switchIfEmpty(false.toMono())
 
-    fun verifyTableHasRows(table: String, rows: Long) {
+    fun verifyTableHasRows(table: String, rows: Long, idColumn: String = "id") {
         StepVerifier.create(
             databaseClient.select()
                 .from(table)
-                .project("id")
+                .project(idColumn)
                 .fetch().all()
         )
             .expectNextCount(rows).verifyComplete()
@@ -63,6 +63,8 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
     fun `we should have inserted the data`() {
         verifyTableHasRows("pets", 1)
         verifyTableHasRows("breeds", 1)
+        verifyTableHasRows("vaccines", 3)
         verifyTableHasRows("categories", 1)
+        verifyTableHasRows("pets_vaccines", 3, "id_pet")
     }
 }
