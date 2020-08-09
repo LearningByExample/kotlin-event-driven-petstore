@@ -30,10 +30,12 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
         .fetch().one().map { it.getOrDefault("table_name", "") == name }.switchIfEmpty(false.toMono())
 
     fun verifyTableHasRows(table: String, rows: Long) {
-        StepVerifier.create(databaseClient.select()
-            .from(table)
-            .project("id")
-            .fetch().all())
+        StepVerifier.create(
+            databaseClient.select()
+                .from(table)
+                .project("id")
+                .fetch().all()
+        )
             .expectNextCount(rows).verifyComplete()
     }
 
