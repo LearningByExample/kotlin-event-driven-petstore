@@ -4,7 +4,6 @@ import org.learning.by.example.petstore.petqueries.model.Pet
 import org.slf4j.LoggerFactory
 import org.springframework.data.r2dbc.core.DatabaseClient
 import org.springframework.stereotype.Service
-import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toMono
 import java.time.LocalDateTime
@@ -43,35 +42,52 @@ class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
             AND
                 pets_vaccines.id_vaccine = vaccines.id
         """
+        const val SQL_SELECT_TAGS =
+            """
+            SELECT
+                tags.name
+            FROM
+                pets_tags, tags
+            WHERE
+                pets_tags.id_pet = :id
+            AND
+                pets_tags.id_tag = tags.id
+        """
     }
 
-    override fun findPetById(id: UUID): Mono<Pet> {
-        return databaseClient.execute(SQL_SELECT_PET)
-            .bind("id", id.toString())
-            .fetch().one()
-            .flatMap {
-                val name = it.getValue("name") as String
-                val category = it.getValue("category") as String
-                val breed = it.getValue("breed") as String
-                val dob = it.getValue("dob") as LocalDateTime
-                val dobUtcString = dob.toInstant(ZoneOffset.UTC).toString()
-                getVaccines(id).collectList().flatMap { vaccines ->
-                    if (vaccines.isNotEmpty()) {
-                        Pet(name, category, breed, dobUtcString, vaccines).toMono()
-                    } else {
-                        LOGGER.warn("The pet with id $id was found without vaccines.")
-                        Mono.empty()
+    override fun findPetById(id: UUID) = databaseClient.execute(SQL_SELECT_PET)
+        .bind("id", id.toString())
+        .fetch().one()
+        .flatMap {
+            val name = it.getValue("name") as String
+            val category = it.getValue("category") as String
+            val breed = it.getValue("breed") as String
+            val dob = it.getValue("dob") as LocalDateTime
+            val dobUtcString = dob.toInstant(ZoneOffset.UTC).toString()
+            getVaccines(id).collectList().flatMap { vaccines ->
+                if (vaccines.isNotEmpty()) {
+                    getTags(id).collectList().flatMap { tags ->
+                        Pet(name, category, breed, dobUtcString, vaccines, if (tags.isNotEmpty()) tags else null)
+                            .toMono()
                     }
+                } else {
+                    LOGGER.warn("The pet with id $id was found without vaccines.")
+                    Mono.empty()
                 }
             }
-    }
+        }
 
-    fun getVaccines(id: UUID): Flux<String> {
-        return databaseClient.execute(SQL_SELECT_VACCINES)
-            .bind("id", id.toString())
-            .fetch().all()
-            .flatMap {
-                (it.getValue("name") as String).toMono()
-            }
-    }
+    fun getVaccines(id: UUID) = databaseClient.execute(SQL_SELECT_VACCINES)
+        .bind("id", id.toString())
+        .fetch().all()
+        .flatMap {
+            (it.getValue("name") as String).toMono()
+        }
+
+    fun getTags(id: UUID) = databaseClient.execute(SQL_SELECT_TAGS)
+        .bind("id", id.toString())
+        .fetch().all()
+        .flatMap {
+            (it.getValue("name") as String).toMono()
+        }
 }

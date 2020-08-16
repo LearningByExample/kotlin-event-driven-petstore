@@ -61,10 +61,12 @@ internal class DBInitializerTest(@Autowired val databaseClient: DatabaseClient) 
 
     @Test
     fun `we should have inserted the data`() {
-        verifyTableHasRows("pets", 2)
+        verifyTableHasRows("pets", 3)
         verifyTableHasRows("breeds", 1)
         verifyTableHasRows("vaccines", 3)
         verifyTableHasRows("categories", 1)
-        verifyTableHasRows("pets_vaccines", 3, "id_pet")
+        verifyTableHasRows("tags", 2)
+        verifyTableHasRows("pets_vaccines", 5, "id_pet")
+        verifyTableHasRows("pets_tags", 2, "id_pet")
     }
 }
