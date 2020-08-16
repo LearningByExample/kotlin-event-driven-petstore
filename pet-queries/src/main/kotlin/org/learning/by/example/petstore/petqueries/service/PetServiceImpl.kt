@@ -14,6 +14,9 @@ import java.util.UUID
 class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
     companion object {
         val LOGGER = LoggerFactory.getLogger(PetServiceImpl::class.java)!!
+        const val ERROR_PET_VACCINES = "Error getting pet vaccines"
+        const val ERROR_PET_TAGS = "Error getting pet tags"
+        const val ERROR_PET = "Error getting pet"
         const val SQL_SELECT_PET =
             """
             SELECT
@@ -75,6 +78,8 @@ class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
                     Mono.empty()
                 }
             }
+        }.onErrorMap {
+            GettingPetException(ERROR_PET, it)
         }
 
     fun getVaccines(id: UUID) = databaseClient.execute(SQL_SELECT_VACCINES)
@@ -82,6 +87,8 @@ class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
         .fetch().all()
         .flatMap {
             (it.getValue("name") as String).toMono()
+        }.onErrorMap {
+            GettingVaccinesException(ERROR_PET_VACCINES, it)
         }
 
     fun getTags(id: UUID) = databaseClient.execute(SQL_SELECT_TAGS)
@@ -89,5 +96,7 @@ class PetServiceImpl(val databaseClient: DatabaseClient) : PetService {
         .fetch().all()
         .flatMap {
             (it.getValue("name") as String).toMono()
+        }.onErrorMap {
+            GettingTagsException(ERROR_PET_TAGS, it)
         }
 }
