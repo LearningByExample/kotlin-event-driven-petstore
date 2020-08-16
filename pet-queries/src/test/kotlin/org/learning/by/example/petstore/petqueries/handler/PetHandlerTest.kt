@@ -9,9 +9,13 @@ import com.nhaarman.mockitokotlin2.whenever
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
+import org.learning.by.example.petstore.petqueries.model.ErrorResponse
 import org.learning.by.example.petstore.petqueries.model.Pet
 import org.learning.by.example.petstore.petqueries.service.PetService
+import org.learning.by.example.petstore.petqueries.service.PetServiceException
 import org.learning.by.example.petstore.petqueries.testing.verify
 import org.learning.by.example.petstore.petqueries.testing.verifyEmpty
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,6 +42,8 @@ internal class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
         const val PET_GET_PATH = "/pet"
         const val EXISTING_PET_ID = "4cb5294b-1034-4bc4-9b3d-542adb232a21"
         const val NOT_EXISTING_PET_ID = "111ccc4b-1034-4bc4-9b3d-542adb232a21"
+        const val CONTROLLED_ERROR_PET_ID = "111ccc4b-1034-abcd-9b3d-542adb232a21"
+        const val UNCONTROLLED_ERROR_PET_ID = "111ccc4b-1034-abcd-bbbb-542adb232a21"
     }
 
     @BeforeEach
@@ -51,6 +57,12 @@ internal class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
                 listOf("vaccine1", "vaccine2", "vaccine3")
             ).toMono()
         ).whenever(petService).findPetById(UUID.fromString(EXISTING_PET_ID))
+        doReturn(
+            Mono.error<Pet>(PetServiceException("Error getting pet", RuntimeException("error")))
+        ).whenever(petService).findPetById(UUID.fromString(CONTROLLED_ERROR_PET_ID))
+        doReturn(
+            Mono.error<Pet>(RuntimeException("error"))
+        ).whenever(petService).findPetById(UUID.fromString(UNCONTROLLED_ERROR_PET_ID))
     }
 
     @AfterEach
@@ -100,5 +112,42 @@ internal class PetHandlerTest(@Autowired private val petHandler: PetHandler) {
 
         verify(petService).findPetById(UUID.fromString(NOT_EXISTING_PET_ID))
         verifyNoMoreInteractions(petService)
+    }
+
+    data class Expect(val description: String, val moreInfo: String?)
+    data class Params(val petId: String)
+    data class TestCase(val name: String, val params: Params, val expect: Expect)
+
+    @TestFactory
+    fun `when ask to get a pet `() = listOf(
+        TestCase(
+            name = "it should return an error when the service returns a controlled error",
+            params = Params(CONTROLLED_ERROR_PET_ID),
+            expect = Expect("Pet cannot be retrieved", "Error getting pet")
+        ),
+        TestCase(
+            name = "it should return an error when the service returns a uncontrolled error",
+            params = Params(UNCONTROLLED_ERROR_PET_ID),
+            expect = Expect("Pet cannot be retrieved", "Unknown error")
+        )
+    ).map {
+        DynamicTest.dynamicTest(it.name) {
+            val httpRequest = MockServerHttpRequest
+                .get(PET_GET_PATH)
+                .accept(MediaType.APPLICATION_JSON)
+            val webExchange = MockServerWebExchange.from(httpRequest)
+            val pathVariables = Collections.singletonMap("id", it.params.petId)
+            webExchange.attributes[RouterFunctions.URI_TEMPLATE_VARIABLES_ATTRIBUTE] = pathVariables
+
+            val request = ServerRequest.create(webExchange, HandlerStrategies.withDefaults().messageReaders())
+            petHandler.getPet(request).verify { response, error: ErrorResponse ->
+                assertThat(response.statusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+                assertThat(error.description).isEqualTo(it.expect.description)
+                assertThat(error.moreInfo).isEqualTo(it.expect.moreInfo)
+            }
+
+            verify(petService).findPetById(UUID.fromString(it.params.petId))
+            verifyNoMoreInteractions(petService)
+        }
     }
 }
