@@ -1,0 +1,19 @@
+apiVersion: "acid.zalan.do/v1"
+kind: postgresql
+metadata:
+  name: petstore-pets-cluster
+  namespace: default
+spec:
+  teamId: "petstore"
+  volume:
+    size: 1Gi
+  numberOfInstances: 2
+  users:
+    petdba:  # database owner
+    - superuser
+    - createdb
+    petuser: []  # roles
+  databases:
+    pets: petdba  # dbname: owner
+  postgresql:
+    version: "11"
