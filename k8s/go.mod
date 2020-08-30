@@ -2,4 +2,4 @@ module k8s
 
 go 1.14
 
-require k8s.io/client-go v0.17.0
+require github.com/go-git/go-git/v5 v5.1.0
