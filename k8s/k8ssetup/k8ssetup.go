@@ -34,6 +34,15 @@ func (k k8sSetUpImpl) isPostgreSqlOperatorInstalled() (bool, error) {
 	return true, nil
 }
 
+func (k k8sSetUpImpl) isDatabaseCreated() (bool, error) {
+	log.Println("Checking if pet database is already created ...")
+	if _, err := k.kubectlCommand("describe", "postgresql/petstore-pets-cluster"); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (k k8sSetUpImpl) createDatabase() error {
 	log.Println("Installing database ...")
 	if _, err := k.kubectlCommand("create", "-f", "pets-db.yml"); err != nil {
@@ -122,6 +131,10 @@ func (k *k8sSetUpImpl) InstallDatabase() error {
 			}
 		} else {
 			log.Println("PostgreSQL operator is installed ...")
+		}
+
+		if created, err := k.isDatabaseCreated(); err == nil && created {
+			return errors.New("database already exists")
 		}
 
 		if err := k.createDatabase(); err == nil {
