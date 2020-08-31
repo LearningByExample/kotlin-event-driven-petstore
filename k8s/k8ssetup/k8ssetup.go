@@ -2,10 +2,12 @@ package k8ssetup
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,6 +24,25 @@ type K8sSetUp interface {
 type k8sSetUpImpl struct {
 	kubectlPath string
 	dockerPath  string
+}
+
+func (k k8sSetUpImpl) checkDockerRegistry() error {
+	log.Print("Checking docker registry ...")
+	registry := os.Getenv("DOCKER_REGISTRY")
+	if registry == "" {
+		return errors.New("error checking docker registry, variable DOCKER_REGISTRY does not exist")
+	}
+	if resp, err := http.Get(registry + "/v2/"); err != nil {
+		return fmt.Errorf("error checking docker registry, %v", err)
+	} else {
+		//noinspection GoUnhandledErrorResult
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("error checking docker registry, status is %d", resp.StatusCode)
+		}
+	}
+	log.Printf("Docker registry found at %q", registry)
+	return nil
 }
 
 func (k k8sSetUpImpl) InstallPostgresqlOperator() error {
@@ -124,6 +145,10 @@ func (k *k8sSetUpImpl) Initialize() error {
 		log.Printf("docker found in %s", dockerPath)
 	} else {
 		return fmt.Errorf("error getting docker path: %v", err)
+	}
+
+	if err := k.checkDockerRegistry(); err != nil {
+		return fmt.Errorf("error checking docker registry: %v", err)
 	}
 
 	return nil

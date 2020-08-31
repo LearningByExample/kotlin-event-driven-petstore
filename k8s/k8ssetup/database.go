@@ -1,7 +1,6 @@
 package k8ssetup
 
 import (
-	"errors"
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"io/ioutil"
@@ -18,7 +17,7 @@ type DatabaseYml struct {
 }
 
 func (k k8sSetUpImpl) isDatabaseCreated(cluster string) (bool, error) {
-	log.Println("Checking if pet database is already created ...")
+	log.Printf("Checking if database cluster %q is already created ...", cluster)
 	if _, err := k.kubectl("describe", "postgresql/"+cluster); err != nil {
 		return false, err
 	}
@@ -53,7 +52,7 @@ func (k k8sSetUpImpl) getClusterName(fileName string) (clusterName string, err e
 }
 
 func (k k8sSetUpImpl) isDatabaseRunning(cluster string) (bool, error) {
-	log.Println("Check is database running ...")
+	log.Printf("Checking if database cluster %q is already running ...", cluster)
 	output, err := k.kubectl("get", "postgresql/"+cluster, "-o", "jsonpath={.status}")
 	status := ""
 	if err != nil {
@@ -75,11 +74,11 @@ func (k k8sSetUpImpl) waitDatabaseCreation(cluster string) {
 		running, err := k.isDatabaseRunning(cluster)
 		cnt = !(err == nil && running)
 	}
-	log.Println("Database is running ...")
+	log.Printf("Database cluster %q is running", cluster)
 }
 
 func (k *k8sSetUpImpl) CreationDatabase(fileName string) error {
-	log.Println("Installing database ...")
+	log.Printf("Creating database from file %q ...", fileName)
 
 	var cluster string
 	var err error
@@ -88,13 +87,13 @@ func (k *k8sSetUpImpl) CreationDatabase(fileName string) error {
 	}
 
 	if created, err := k.isDatabaseCreated(cluster); err == nil && created {
-		return errors.New("database already exists")
+		return fmt.Errorf("database cluster %q already exists", cluster)
 	}
 
 	if err = k.createDatabase(fileName); err == nil {
-		log.Println("Pet database created ...")
+		log.Printf("Database cluster %q created ...", cluster)
 	} else {
-		return fmt.Errorf("error creating pet database: %v", err)
+		return fmt.Errorf("error creating database cluster %q: %v", cluster, err)
 	}
 
 	k.waitDatabaseCreation(cluster)

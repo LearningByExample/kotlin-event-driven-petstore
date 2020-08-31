@@ -5,7 +5,6 @@ import (
 	"log"
 )
 
-// TODO - check the local registry exists
 // TODO - create a dockerfile with the SQLs and postgresql client
 // TODO - build docker
 // TODO - push docker to a local registry
