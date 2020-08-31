@@ -2,54 +2,55 @@ package k8ssetup
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/go-git/go-git/v5"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 )
 
 type K8sSetUp interface {
 	Initialize() error
-	InstallDatabase() error
+	InstallPostgresqlOperator() error
+	CreationDatabase(fileName string) error
 }
 
 type k8sSetUpImpl struct {
 	kubectlPath string
+	dockerPath  string
+}
+
+func (k k8sSetUpImpl) InstallPostgresqlOperator() error {
+	log.Println("Installing PostgreSQL operator ...")
+
+	if installed, err := k.isPostgreSqlOperatorInstalled(); err == nil {
+		if !installed {
+			log.Println("PostgreSQL operator not installed ...")
+			if err = k.installPsqlOperator(); err != nil {
+				return fmt.Errorf("error installing PostgreSQL operator: %v", err)
+			}
+		} else {
+			log.Println("PostgreSQL operator is installed ...")
+		}
+
+	} else {
+		return fmt.Errorf("error checking operator installation: %v", err)
+	}
+
+	return nil
 }
 
 func (k k8sSetUpImpl) isPostgreSqlOperatorInstalled() (bool, error) {
 	log.Println("Checking if postgresql operator is already installed ...")
-	if _, err := k.kubectlCommand("describe", "service/postgres-operator"); err != nil {
+	if _, err := k.kubectl("describe", "service/postgres-operator"); err != nil {
 		return false, err
 	}
 
 	return true, nil
-}
-
-func (k k8sSetUpImpl) isDatabaseCreated() (bool, error) {
-	log.Println("Checking if pet database is already created ...")
-	if _, err := k.kubectlCommand("describe", "postgresql/petstore-pets-cluster"); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-func (k k8sSetUpImpl) createDatabase() error {
-	log.Println("Installing database ...")
-	if _, err := k.kubectlCommand("create", "-f", "pets-db.yml"); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (k *k8sSetUpImpl) installPsqlOperator() error {
@@ -78,7 +79,7 @@ func (k *k8sSetUpImpl) installPsqlOperator() error {
 	}
 	for _, v := range files {
 		log.Printf("Creating %q", v)
-		if _, err := k.kubectlCommand("create", "-f", filepath.Join(dir, v)); err != nil {
+		if _, err := k.kubectl("create", "-f", filepath.Join(dir, v)); err != nil {
 			return fmt.Errorf("error in kubectl: %v", err)
 		}
 	}
@@ -86,75 +87,28 @@ func (k *k8sSetUpImpl) installPsqlOperator() error {
 	return nil
 }
 
-func (k k8sSetUpImpl) kubectlCommand(params ...string) (output string, err error) {
-	cmd := exec.Command(k.kubectlPath, params...)
+func (k k8sSetUpImpl) kubectl(params ...string) (output string, err error) {
+	return k.executeCommand(k.kubectlPath, params...)
+}
+
+func (k k8sSetUpImpl) docker(params ...string) (output string, err error) {
+	return k.executeCommand(k.dockerPath, params...)
+}
+
+func (k k8sSetUpImpl) executeCommand(cmdName string, params ...string) (output string, err error) {
+	cmd := exec.Command(cmdName, params...)
 
 	var stdBuffer bytes.Buffer
-	mw := io.MultiWriter(os.Stdout, &stdBuffer)
-	cmd.Stdout = mw
-	cmd.Stderr = mw
+	cmd.Stdout = &stdBuffer
+	cmd.Stderr = &stdBuffer
 
 	err = cmd.Run()
 	output = stdBuffer.String()
 	if err != nil {
-		err = fmt.Errorf("error in kubeclt %q", output)
+		err = fmt.Errorf("error in %q %q", cmdName, output)
 	}
 
 	return
-}
-
-func (k k8sSetUpImpl) isDatabaseRunning() (bool, error) {
-	log.Println("Check is database running ...")
-	output, err := k.kubectlCommand("get", "postgresql/petstore-pets-cluster", "-o", "jsonpath={.status}")
-	status := ""
-	if err != nil {
-		return false, err
-	} else {
-		var re = regexp.MustCompile(`(?m).*:(.*)]`)
-		match := re.FindStringSubmatch(output)
-		if len(match) > 1 {
-			status = match[1]
-		}
-	}
-
-	return status == "Running", nil
-}
-
-func (k *k8sSetUpImpl) InstallDatabase() error {
-	log.Println("Installing database ...")
-
-	if installed, err := k.isPostgreSqlOperatorInstalled(); err == nil {
-		if !installed {
-			log.Println("PostgreSQL operator not installed ...")
-			if err = k.installPsqlOperator(); err != nil {
-				return fmt.Errorf("error installing operator: %v", err)
-			}
-		} else {
-			log.Println("PostgreSQL operator is installed ...")
-		}
-
-		if created, err := k.isDatabaseCreated(); err == nil && created {
-			return errors.New("database already exists")
-		}
-
-		if err := k.createDatabase(); err == nil {
-			log.Println("Pet database created ...")
-		} else {
-			return fmt.Errorf("error creating pet database: %v", err)
-		}
-
-		cnt := true
-		for cnt {
-			running, err := k.isDatabaseRunning()
-			cnt = !(err == nil && running)
-		}
-		log.Println("Database is running ...")
-
-	} else {
-		return fmt.Errorf("error checking zalando installation: %v", err)
-	}
-
-	return nil
 }
 
 func (k *k8sSetUpImpl) Initialize() error {
@@ -165,23 +119,38 @@ func (k *k8sSetUpImpl) Initialize() error {
 		return fmt.Errorf("error getting kubectl path: %v", err)
 	}
 
+	if dockerPath, err := k.findDockerPath(); err == nil {
+		k.dockerPath = dockerPath
+		log.Printf("docker found in %s", dockerPath)
+	} else {
+		return fmt.Errorf("error getting docker path: %v", err)
+	}
+
 	return nil
 }
 
 func (k *k8sSetUpImpl) findKubectlPath() (string, error) {
+	return k.findCommandPath("kubectl")
+}
+
+func (k *k8sSetUpImpl) findDockerPath() (string, error) {
+	return k.findCommandPath("docker")
+}
+
+func (k *k8sSetUpImpl) findCommandPath(cmdName string) (string, error) {
 	path := os.Getenv("PATH")
 	sep := ":"
 	if runtime.GOOS == "windows" {
 		sep = ";"
 	}
 	for _, v := range strings.Split(path, sep) {
-		kubectlPath := filepath.Join(v, "kubectl")
-		if file, err := os.Open(kubectlPath); err == nil {
+		cmdPath := filepath.Join(v, cmdName)
+		if file, err := os.Open(cmdPath); err == nil {
 			_ = file.Close()
-			return kubectlPath, nil
+			return cmdPath, nil
 		}
 	}
-	return "", errors.New("not kubectl path found")
+	return "", fmt.Errorf("not %q path found", cmdName)
 }
 
 func NewK8sSetUp() K8sSetUp {

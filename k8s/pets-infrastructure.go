@@ -5,9 +5,6 @@ import (
 	"log"
 )
 
-// TODO - generalise to any database
-
-// TODO - find out the docker command path
 // TODO - check the local registry exists
 // TODO - create a dockerfile with the SQLs and postgresql client
 // TODO - build docker
@@ -21,7 +18,10 @@ func main() {
 	if err := stp.Initialize(); err != nil {
 		log.Fatalf("Error in initialize, %v", err)
 	}
-	if err := stp.InstallDatabase(); err != nil {
+	if err := stp.InstallPostgresqlOperator(); err != nil {
+		log.Fatalf("Error installing PostgreSQL operator, %v", err)
+	}
+	if err := stp.CreationDatabase("pets-db.yml"); err != nil {
 		log.Fatalf("Error installing database, %v", err)
 	}
 }
