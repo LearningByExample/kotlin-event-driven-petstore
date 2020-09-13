@@ -1,0 +1,8 @@
+FROM ubuntu:latest
+
+RUN apt-get update
+RUN apt-get install postgresql-client -y
+RUN apt-get install wget -y
+RUN apt-get install unzip
+
+CMD ["/bin/bash"]

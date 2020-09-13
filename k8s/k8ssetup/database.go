@@ -98,5 +98,10 @@ func (k *k8sSetUpImpl) CreationDatabase(fileName string) error {
 
 	k.waitDatabaseCreation(cluster)
 
+	if err = k.createDatabaseJob(cluster); err == nil {
+		log.Printf("Database job created for cluster %q...", cluster)
+	} else {
+		return fmt.Errorf("error creating job for cluster %q: %v", cluster, err)
+	}
 	return nil
 }
