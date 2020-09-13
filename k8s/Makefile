@@ -20,9 +20,13 @@
 
 # Go parameters
 GOCMD=go
+GOLINT=golint
 GOFORMAT=$(GOCMD) fmt
 APP_PATH="."
 default: format
 
 format:
 	$(GOFORMAT) $(APP_PATH)/...
+
+lint:
+	$(GOLINT) -set_exit_status ./...

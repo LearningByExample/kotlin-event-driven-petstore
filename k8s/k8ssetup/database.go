@@ -9,6 +9,7 @@ import (
 	"regexp"
 )
 
+// DatabaseYml is used to read a yml file in order to get the cluster name
 //noinspection GoStructTag
 type DatabaseYml struct {
 	Metadata struct {
@@ -57,12 +58,12 @@ func (k k8sSetUpImpl) isDatabaseRunning(cluster string) (bool, error) {
 	status := ""
 	if err != nil {
 		return false, err
-	} else {
-		var re = regexp.MustCompile(`(?m).*:(.*)]`)
-		match := re.FindStringSubmatch(output)
-		if len(match) > 1 {
-			status = match[1]
-		}
+	}
+
+	var re = regexp.MustCompile(`(?m).*:(.*)]`)
+	match := re.FindStringSubmatch(output)
+	if len(match) > 1 {
+		status = match[1]
 	}
 
 	return status == "Running", nil

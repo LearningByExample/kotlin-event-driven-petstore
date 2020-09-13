@@ -5,13 +5,6 @@ import (
 	"log"
 )
 
-// TODO - create a dockerfile with the SQLs and postgresql client
-// TODO - build docker
-// TODO - push docker to a local registry
-// TODO - create and run a k8s job with the docker
-
-// TODO - makefile
-
 func main() {
 	stp := k8ssetup.NewK8sSetUp()
 	if err := stp.Initialize(); err != nil {

@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+    generateName: petstore-pets-cluster-run- # the name of our job
+    labels:
+        job-group: petstore-jobs # logical grouping
+spec:
+    template:
+        metadata:
+            labels:
+                job-group: petstore-jobs # logical grouping
+        spec:
+            containers:
+                -   name: petstore-pets-cluster-job
+                    image: $DOCKER_REGISTRY_K8S/petstore-pets-cluster-job
+                    imagePullPolicy: Always
+                    env:
+                        -   name: DATABASE_USERNAME
+                            valueFrom:
+                                secretKeyRef:
+                                    name: petdba.petstore-pets-cluster.credentials
+                                    key: username
+                        -   name: DATABASE_PASSWORD
+                            valueFrom:
+                                secretKeyRef:
+                                    name: petdba.petstore-pets-cluster.credentials
+                                    key: password
+            restartPolicy: Never

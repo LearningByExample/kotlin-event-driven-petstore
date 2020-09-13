@@ -5,4 +5,9 @@ RUN apt-get install postgresql-client -y
 RUN apt-get install wget -y
 RUN apt-get install unzip
 
-CMD ["/bin/bash"]
+ADD k8s/petstore-pets-cluster-job.sh /usr/src/job.sh
+RUN chmod +x /usr/src/job.sh
+
+ADD pet-sql/schema.sql /usr/src/schema.sql
+
+CMD ["/usr/src/job.sh"]

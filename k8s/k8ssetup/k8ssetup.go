@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 )
 
+// K8sSetUp is an interface that defines our steps
 type K8sSetUp interface {
 	Initialize() error
 	InstallPostgresqlOperator() error
@@ -18,15 +19,16 @@ type K8sSetUp interface {
 }
 
 type k8sSetUpImpl struct {
-	kubectlPath    string
-	dockerPath     string
-	dockerRegistry string
+	kubectlPath       string
+	dockerPath        string
+	dockerRegistry    string
+	dockerRegistryK8s string
 }
 
 func (k k8sSetUpImpl) InstallPostgresqlOperator() error {
 	log.Println("Installing PostgreSQL operator ...")
 
-	if installed, err := k.isPostgreSqlOperatorInstalled(); err == nil {
+	if installed, err := k.isPostgreSQLOperatorInstalled(); err == nil {
 		if !installed {
 			log.Println("PostgreSQL operator not installed ...")
 			if err = k.installPsqlOperator(); err != nil {
@@ -43,7 +45,7 @@ func (k k8sSetUpImpl) InstallPostgresqlOperator() error {
 	return nil
 }
 
-func (k k8sSetUpImpl) isPostgreSqlOperatorInstalled() (bool, error) {
+func (k k8sSetUpImpl) isPostgreSQLOperatorInstalled() (bool, error) {
 	log.Println("Checking if postgresql operator is already installed ...")
 	if _, err := k.kubectl("describe", "service/postgres-operator"); err != nil {
 		return false, err
@@ -110,6 +112,7 @@ func (k k8sSetUpImpl) executeCommand(cmdName string, params ...string) (output s
 	return
 }
 
+// NewK8sSetUp returns a K8sSetUp interface
 func NewK8sSetUp() K8sSetUp {
 	return &k8sSetUpImpl{}
 }
