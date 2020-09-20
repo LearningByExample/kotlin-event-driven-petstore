@@ -12,9 +12,11 @@ import (
 )
 
 var (
-	pathVar        = "PATH"
-	kubectlCommand = "kubectl"
-	dockerCommand  = "docker"
+	pathVar            = "PATH"
+	kubectlCommand     = "kubectl"
+	dockerCommand      = "docker"
+	dockerRegistryVar  = "DOCKER_REGISTRY"
+	dockerRegistryPath = "/v2/"
 )
 
 func (k k8sSetUpImpl) findDockerRegistryK8s() (string, error) {
@@ -28,13 +30,13 @@ func (k k8sSetUpImpl) findDockerRegistryK8s() (string, error) {
 
 func (k k8sSetUpImpl) findDockerRegistry() (string, error) {
 	log.Print("Checking docker registry ...")
-	registry := os.Getenv("DOCKER_REGISTRY")
+	registry := os.Getenv(dockerRegistryVar)
 	if registry == "" {
-		return "", errors.New("error checking docker registry, variable DOCKER_REGISTRY does not exist")
+		return "", fmt.Errorf("error checking docker registry, variable %s does not exist", dockerRegistryVar)
 	}
 	var resp *http.Response
 	var err error
-	if resp, err = http.Get(registry + "/v2/"); err != nil {
+	if resp, err = http.Get(registry + dockerRegistryPath); err != nil {
 		return "", fmt.Errorf("error checking docker registry, %v", err)
 	}
 	//noinspection GoUnhandledErrorResult
