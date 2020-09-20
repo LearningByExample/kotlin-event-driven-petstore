@@ -11,6 +11,12 @@ import (
 	"strings"
 )
 
+var (
+	pathVar        = "PATH"
+	kubectlCommand = "kubectl"
+	dockerCommand  = "docker"
+)
+
 func (k k8sSetUpImpl) findDockerRegistryK8s() (string, error) {
 	log.Print("Checking K8s docker registry ...")
 	registry := os.Getenv("DOCKER_REGISTRY_K8S")
@@ -41,15 +47,15 @@ func (k k8sSetUpImpl) findDockerRegistry() (string, error) {
 }
 
 func (k *k8sSetUpImpl) findKubectlPath() (string, error) {
-	return k.findCommandPath("kubectl")
+	return k.findCommandPath(kubectlCommand)
 }
 
 func (k *k8sSetUpImpl) findDockerPath() (string, error) {
-	return k.findCommandPath("docker")
+	return k.findCommandPath(dockerCommand)
 }
 
 func (k *k8sSetUpImpl) findCommandPath(cmdName string) (string, error) {
-	path := os.Getenv("PATH")
+	path := os.Getenv(pathVar)
 	sep := ":"
 	if runtime.GOOS == "windows" {
 		sep = ";"
