@@ -23,6 +23,8 @@ GOCMD=go
 GOLINT=golint
 GOFORMAT=$(GOCMD) fmt
 GOTEST=$(GOCMD) test
+GOTOOL=$(GOCMD) tool
+COVERAGE=$(GOTOOL) cover
 APP_PATH="."
 default: validate
 
@@ -33,6 +35,10 @@ lint:
 	$(GOLINT) -set_exit_status ./...
 
 test: 
-	$(GOTEST) ./... -v
+	$(GOTEST) ./... -v -cover -coverprofile=coverage.out -covermode=atomic
 
 validate: test lint	
+
+coverage: test
+	$(COVERAGE) -html=coverage.out
+	
