@@ -1,7 +1,6 @@
 package k8ssetup
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,18 +11,19 @@ import (
 )
 
 var (
-	pathVar            = "PATH"
-	kubectlCommand     = "kubectl"
-	dockerCommand      = "docker"
-	dockerRegistryVar  = "DOCKER_REGISTRY"
-	dockerRegistryPath = "/v2/"
+	pathVar              = "PATH"
+	kubectlCommand       = "kubectl"
+	dockerCommand        = "docker"
+	dockerRegistryVar    = "DOCKER_REGISTRY"
+	dockerRegistryPath   = "/v2/"
+	dockerRegistryK8sVar = "DOCKER_REGISTRY_K8S"
 )
 
 func (k k8sSetUpImpl) findDockerRegistryK8s() (string, error) {
 	log.Print("Checking K8s docker registry ...")
-	registry := os.Getenv("DOCKER_REGISTRY_K8S")
+	registry := os.Getenv(dockerRegistryK8sVar)
 	if registry == "" {
-		return "", errors.New("error checking K8s docker registry, variable DOCKER_REGISTRY_K8S does not exist")
+		return "", fmt.Errorf("error checking K8s docker registry, variable %s does not exist", dockerRegistryK8sVar)
 	}
 	return registry, nil
 }

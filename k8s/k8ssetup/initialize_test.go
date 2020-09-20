@@ -15,6 +15,7 @@ const (
 	notExistingCommand = "test_does_not_exist.sh"
 	existingHost       = "https://google.com"
 	notExistingHost    = "https://not-existing-host.com"
+	existingValue      = "value"
 )
 
 func setEnvVar() (path string) {
@@ -173,6 +174,40 @@ func Test_findDockerRegistry(t *testing.T) {
 		expect := ""
 		expectErr := fmt.Sprintf("error checking docker registry, variable %s does not exist", testPathVar)
 		got, gotErr := k8sImpl.findDockerRegistry()
+		if gotErr == nil {
+			t.Fatalf("Got error nil, expect %q error", expectErr)
+		}
+		if gotErr.Error() != expectErr {
+			t.Fatalf("Got error %q, expect %q error", gotErr, expectErr)
+		}
+		if got != expect {
+			t.Fatalf("Got %q, expect %q", got, expect)
+		}
+	})
+}
+
+func Test_findDockerRegistryK8s(t *testing.T) {
+	dockerRegistryK8sVar = testPathVar
+	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
+
+	t.Run("must find the k8s docker registry", func(t *testing.T) {
+		os.Setenv(testPathVar, existingValue)
+		expect := existingValue
+		got, gotErr := k8sImpl.findDockerRegistryK8s()
+		os.Unsetenv(dockerRegistryK8sVar)
+		if gotErr != nil {
+			t.Fatalf("Got error %v, expect nil error", gotErr)
+		}
+		if got != expect {
+			t.Fatalf("Got %q, expect %q", got, expect)
+		}
+	})
+
+	t.Run("must not find the k8s docker registry when env var does not exist", func(t *testing.T) {
+		os.Unsetenv(dockerRegistryK8sVar)
+		expect := ""
+		expectErr := fmt.Sprintf("error checking K8s docker registry, variable %s does not exist", testPathVar)
+		got, gotErr := k8sImpl.findDockerRegistryK8s()
 		if gotErr == nil {
 			t.Fatalf("Got error nil, expect %q error", expectErr)
 		}
