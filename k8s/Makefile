@@ -22,11 +22,17 @@
 GOCMD=go
 GOLINT=golint
 GOFORMAT=$(GOCMD) fmt
+GOTEST=$(GOCMD) test
 APP_PATH="."
-default: format
+default: validate
 
 format:
 	$(GOFORMAT) $(APP_PATH)/...
 
 lint:
 	$(GOLINT) -set_exit_status ./...
+
+test: 
+	$(GOTEST) ./... -v
+
+validate: test lint	
