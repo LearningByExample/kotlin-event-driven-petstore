@@ -24,38 +24,39 @@ type k8sSetUpImpl struct {
 	dockerPath        string
 	dockerRegistry    string
 	dockerRegistryK8s string
+	psqlOperatorRepo  string
+	executeCommand    func(cmdName string, params ...string) (string, error)
 }
+
+const (
+	zalandoPsqlOperator = "https://github.com/zalando/postgres-operator.git"
+)
 
 func (k k8sSetUpImpl) InstallPostgresqlOperator() error {
 	log.Println("Installing PostgreSQL operator ...")
 
-	if installed, err := k.isPostgreSQLOperatorInstalled(); err == nil {
-		if !installed {
-			log.Println("PostgreSQL operator not installed ...")
-			if err = k.installPsqlOperator(); err != nil {
-				return fmt.Errorf("error installing PostgreSQL operator: %v", err)
-			}
-		} else {
-			log.Println("PostgreSQL operator is installed ...")
+	if installed := k.isPostgreSQLOperatorInstalled(); !installed {
+		log.Println("PostgreSQL operator not installed ...")
+		if err := k.doPsqlOperatorInstallation(); err != nil {
+			return fmt.Errorf("error installing PostgreSQL operator: %v", err)
 		}
-
 	} else {
-		return fmt.Errorf("error checking operator installation: %v", err)
+		log.Println("PostgreSQL operator is installed ...")
 	}
 
 	return nil
 }
 
-func (k k8sSetUpImpl) isPostgreSQLOperatorInstalled() (bool, error) {
+func (k k8sSetUpImpl) isPostgreSQLOperatorInstalled() bool {
 	log.Println("Checking if postgresql operator is already installed ...")
 	if _, err := k.kubectl("describe", "service/postgres-operator"); err != nil {
-		return false, err
+		return false
 	}
 
-	return true, nil
+	return true
 }
 
-func (k *k8sSetUpImpl) installPsqlOperator() error {
+func (k *k8sSetUpImpl) doPsqlOperatorInstallation() error {
 	log.Println("Installing postgreSQL operator ...")
 	dir, err := ioutil.TempDir("", "pets-go-infra")
 	if err != nil {
@@ -66,7 +67,7 @@ func (k *k8sSetUpImpl) installPsqlOperator() error {
 	log.Printf("Created temp dir %s ...", dir)
 
 	if _, err = git.PlainClone(dir, false, &git.CloneOptions{
-		URL:      "https://github.com/zalando/postgres-operator.git",
+		URL:      k.psqlOperatorRepo,
 		Progress: os.Stdout,
 	}); err != nil {
 		return fmt.Errorf("error clonning postgres operator: %v", err)
@@ -97,7 +98,7 @@ func (k k8sSetUpImpl) docker(params ...string) (output string, err error) {
 	return k.executeCommand(k.dockerPath, params...)
 }
 
-func (k k8sSetUpImpl) executeCommand(cmdName string, params ...string) (output string, err error) {
+func (k k8sSetUpImpl) defaultExecuteCommand(cmdName string, params ...string) (output string, err error) {
 	cmd := exec.Command(cmdName, params...)
 
 	var stdBuffer bytes.Buffer
@@ -115,5 +116,10 @@ func (k k8sSetUpImpl) executeCommand(cmdName string, params ...string) (output s
 
 // NewK8sSetUp returns a K8sSetUp interface
 func NewK8sSetUp() K8sSetUp {
-	return &k8sSetUpImpl{}
+	impl := &k8sSetUpImpl{
+		psqlOperatorRepo: zalandoPsqlOperator,
+	}
+	impl.executeCommand = impl.defaultExecuteCommand
+
+	return impl
 }
