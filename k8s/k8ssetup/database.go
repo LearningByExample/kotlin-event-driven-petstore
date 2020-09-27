@@ -2,11 +2,12 @@ package k8ssetup
 
 import (
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
+
+	"gopkg.in/yaml.v3"
 )
 
 // DatabaseYml is used to read a yml file in order to get the cluster name
