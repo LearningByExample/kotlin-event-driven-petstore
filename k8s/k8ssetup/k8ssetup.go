@@ -3,12 +3,13 @@ package k8ssetup
 import (
 	"bytes"
 	"fmt"
-	"github.com/go-git/go-git/v5"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/go-git/go-git/v5"
 )
 
 // K8sSetUp is an interface that defines our steps
@@ -106,7 +107,7 @@ func (k k8sSetUpImpl) executeCommand(cmdName string, params ...string) (output s
 	err = cmd.Run()
 	output = stdBuffer.String()
 	if err != nil {
-		err = fmt.Errorf("error in %q %q", cmdName, output)
+		err = fmt.Errorf("error '%v' in %q %q", err, cmdName, output)
 	}
 
 	return
