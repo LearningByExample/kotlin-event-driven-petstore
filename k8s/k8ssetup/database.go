@@ -1,6 +1,7 @@
 package k8ssetup
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -29,11 +30,8 @@ func (k k8sSetUpImpl) isDatabaseCreated(cluster string) (bool, error) {
 
 func (k k8sSetUpImpl) createDatabase(fileName string) error {
 	log.Println("Installing database ...")
-	if _, err := k.kubectl("create", "-f", fileName); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := k.kubectl("create", "-f", fileName)
+	return err
 }
 
 func (k k8sSetUpImpl) getClusterName(fileName string) (clusterName string, err error) {
@@ -45,6 +43,9 @@ func (k k8sSetUpImpl) getClusterName(fileName string) (clusterName string, err e
 		if yamlBytes, err = ioutil.ReadAll(yamlFile); err == nil {
 			data := DatabaseYml{}
 			if err = yaml.Unmarshal(yamlBytes, &data); err == nil {
+				if data.Metadata.Name == "" {
+					err = errors.New("no cluster name found")
+				}
 				clusterName = data.Metadata.Name
 			}
 		}
