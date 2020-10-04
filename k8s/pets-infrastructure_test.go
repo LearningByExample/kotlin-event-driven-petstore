@@ -9,13 +9,13 @@ import (
 type k8sSetUpFake struct {
 	failOnInitialize                bool
 	failOnInstallPostgresqlOperator bool
-	failOnCreationDatabase          bool
+	failOnDatabaseCreation          bool
 }
 
 var (
 	errorInit            = errors.New("error on initialize")
 	errorInstallOperator = errors.New("error on installing postgresql operator")
-	errorCreationDB      = errors.New("error on creation database")
+	errorDBCreation      = errors.New("error on database creation")
 )
 
 func (k k8sSetUpFake) Initialize() error {
@@ -32,9 +32,9 @@ func (k k8sSetUpFake) InstallPostgresqlOperator() error {
 	return nil
 }
 
-func (k k8sSetUpFake) CreationDatabase(fileName string) error {
-	if k.failOnCreationDatabase {
-		return errorCreationDB
+func (k k8sSetUpFake) DatabaseCreation(fileName string) error {
+	if k.failOnDatabaseCreation {
+		return errorDBCreation
 	}
 	return nil
 }
@@ -69,9 +69,9 @@ func Test_run(t *testing.T) {
 		{
 			name: "should run error when creation database fails",
 			stp: k8sSetUpFake{
-				failOnCreationDatabase: true,
+				failOnDatabaseCreation: true,
 			},
-			expect: fmt.Errorf("error installing database, %v", errorCreationDB),
+			expect: fmt.Errorf("error installing database, %v", errorDBCreation),
 		},
 	}
 

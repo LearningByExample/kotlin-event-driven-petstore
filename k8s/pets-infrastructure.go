@@ -13,7 +13,7 @@ func run(stp k8ssetup.K8sSetUp) error {
 	if err := stp.InstallPostgresqlOperator(); err != nil {
 		return fmt.Errorf("error installing PostgreSQL operator, %v", err)
 	}
-	if err := stp.CreationDatabase("pets-db.yml"); err != nil {
+	if err := stp.DatabaseCreation("pets-db.yml"); err != nil {
 		return fmt.Errorf("error installing database, %v", err)
 	}
 	return nil

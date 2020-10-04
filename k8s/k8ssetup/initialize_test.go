@@ -23,7 +23,6 @@ const (
 func setEnvVar() (path string) {
 	pathVar = testPathVar
 	path, _ = os.Getwd()
-	path = filepath.Dir(path)
 	path = filepath.Join(path, testFolder)
 	os.Setenv(pathVar, path)
 	return

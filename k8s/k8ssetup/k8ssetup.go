@@ -16,7 +16,7 @@ import (
 type K8sSetUp interface {
 	Initialize() error
 	InstallPostgresqlOperator() error
-	CreationDatabase(fileName string) error
+	DatabaseCreation(fileName string) error
 }
 
 type k8sSetUpImpl struct {

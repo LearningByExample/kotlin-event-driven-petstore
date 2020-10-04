@@ -80,7 +80,7 @@ func (k k8sSetUpImpl) waitDatabaseCreation(cluster string) {
 	log.Printf("Database cluster %q is running", cluster)
 }
 
-func (k *k8sSetUpImpl) CreationDatabase(fileName string) error {
+func (k *k8sSetUpImpl) DatabaseCreation(fileName string) error {
 	log.Printf("Creating database from file %q ...", fileName)
 
 	var cluster string

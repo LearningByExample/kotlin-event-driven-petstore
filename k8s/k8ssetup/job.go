@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -34,7 +35,8 @@ func (k k8sSetUpImpl) createK8sJob(fileName string) error {
 		registryK8s = strings.Replace(registryK8s, "http://", "", 1)
 
 		newContent := strings.Replace(string(content), "$DOCKER_REGISTRY_K8S", registryK8s, 1)
-		if newFile, err := ioutil.TempFile("", fileName); err == nil {
+		_, onlyFileName := path.Split(fileName)
+		if newFile, err := ioutil.TempFile("", onlyFileName); err == nil {
 			defer newFile.Close()
 			if _, err := newFile.WriteString(newContent); err != nil {
 				return fmt.Errorf("error writting in temp file %q", newFile.Name())

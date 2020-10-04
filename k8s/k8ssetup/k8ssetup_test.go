@@ -15,7 +15,6 @@ const (
 
 func getFilePath(cmd string) string {
 	path, _ := os.Getwd()
-	path = filepath.Dir(path)
 	path = filepath.Join(path, testFolder)
 	path = filepath.Join(path, cmd)
 	return path
