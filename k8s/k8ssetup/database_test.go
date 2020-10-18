@@ -168,7 +168,7 @@ func Test_isDatabaseRunning(t *testing.T) {
 		}
 	})
 
-	t.Run("must return false if database creation fails", func(t *testing.T) {
+	t.Run("must return false if database check fails", func(t *testing.T) {
 		var errInvalid = errors.New("invalid")
 		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
 			return "", errInvalid

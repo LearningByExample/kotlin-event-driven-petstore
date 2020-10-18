@@ -140,6 +140,13 @@ func Test_InstallPostgresqlOperator(t *testing.T) {
 			if params[0] == "describe" {
 				return "error", errors.New("some error")
 			}
+			if params[0] == "get" {
+				if params[1] == "pod" {
+					return "pod/postgres-operator-59bb89464c-dx2rs", nil
+				} else if params[1] == "pod/postgres-operator-59bb89464c-dx2rs" {
+					return "'Running'", nil
+				}
+			}
 			return "", nil
 		}
 		var expect error = nil
@@ -168,6 +175,183 @@ func Test_InstallPostgresqlOperator(t *testing.T) {
 		got := k8sImpl.InstallPostgresqlOperator()
 		if !strings.Contains(got.Error(), expect) {
 			t.Fatalf("Got error %v, expect error %v", got, expect)
+		}
+	})
+}
+
+func Test_waitPsqlOperatorRunning(t *testing.T) {
+	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
+
+	t.Run("must run until database is running", func(t *testing.T) {
+		count := 0
+		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
+			if params[0] == "get" {
+				if params[1] == "pod" {
+					return "pod/postgres-operator-59bb89464c-dx2rs", nil
+				} else if params[1] == "pod/postgres-operator-59bb89464c-dx2rs" {
+					count++
+					if count == 3 {
+						return "'Running'", nil
+					}
+					return "'Waiting'", nil
+				}
+			}
+			return "", nil
+		}
+
+		k8sImpl.waitPsqlOperatorRunning()
+		expect := 3
+		got := count
+		if got != expect {
+			t.Fatalf("Got %v, expect %v", got, expect)
+		}
+	})
+
+	t.Run("must run until there is no error and running", func(t *testing.T) {
+		var errInvalid = errors.New("invalid")
+		count := 0
+		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
+			if params[0] == "get" {
+				if params[1] == "pod" {
+					return "pod/postgres-operator-59bb89464c-dx2rs", nil
+				} else if params[1] == "pod/postgres-operator-59bb89464c-dx2rs" {
+					count++
+					if count == 2 {
+						return "'Running'", nil
+					}
+					return "", errInvalid
+				}
+			}
+			return "", nil
+		}
+
+		k8sImpl.waitPsqlOperatorRunning()
+		expect := 2
+		got := count
+		if got != expect {
+			t.Fatalf("Got %v, expect %v", got, expect)
+		}
+	})
+}
+
+func Test_isPsqlOperatorRunning(t *testing.T) {
+	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
+
+	t.Run("must return true if postgres operator is running", func(t *testing.T) {
+		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
+			if params[0] == "get" {
+				if params[1] == "pod" {
+					return "pod/postgres-operator-59bb89464c-dx2rs", nil
+				} else if params[1] == "pod/postgres-operator-59bb89464c-dx2rs" {
+					return "'Running'", nil
+				}
+			}
+			return "", nil
+		}
+
+		expect := true
+		var expectErr error = nil
+		got, gotErr := k8sImpl.isPsqlOperatorRunning()
+
+		if gotErr != expectErr {
+			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
+		}
+		if got != expect {
+			t.Fatalf("Got %v, expect %v", got, expect)
+		}
+	})
+
+	t.Run("must return false if postgres operator does not exist", func(t *testing.T) {
+		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
+			if params[0] == "get" {
+				if params[1] == "pod" {
+					return "pod/test-1234", nil
+				}
+			}
+			return "", nil
+		}
+
+		expect := false
+		var expectErr error = nil
+		got, gotErr := k8sImpl.isPsqlOperatorRunning()
+
+		if gotErr != expectErr {
+			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
+		}
+		if got != expect {
+			t.Fatalf("Got %v, expect %v", got, expect)
+		}
+	})
+
+	t.Run("must return false if postgres operator is in progress", func(t *testing.T) {
+		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
+			if params[0] == "get" {
+				if params[1] == "pod" {
+					return "pod/postgres-operator-59bb89464c-dx2rs", nil
+				} else if params[1] == "pod/postgres-operator-59bb89464c-dx2rs" {
+					return "'Waiting'", nil
+				}
+			}
+			return "", nil
+		}
+
+		expect := false
+		var expectErr error = nil
+		got, gotErr := k8sImpl.isPsqlOperatorRunning()
+
+		if gotErr != expectErr {
+			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
+		}
+		if got != expect {
+			t.Fatalf("Got %v, expect %v", got, expect)
+		}
+	})
+
+	t.Run("must return false if get pods fails", func(t *testing.T) {
+		var errInvalid = errors.New("invalid")
+		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
+			if params[0] == "get" {
+				if params[1] == "pod" {
+					return "", errInvalid
+				}
+			}
+			return "", nil
+		}
+
+		expect := false
+		expectErr := errInvalid
+		got, gotErr := k8sImpl.isPsqlOperatorRunning()
+
+		if gotErr != expectErr {
+			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
+		}
+		if got != expect {
+			t.Fatalf("Got %v, expect %v", got, expect)
+		}
+	})
+
+	t.Run("must return false if postgres operator status check fails", func(t *testing.T) {
+		var errInvalid = errors.New("invalid")
+		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
+			if params[0] == "get" {
+				if params[1] == "pod" {
+					return "pod/postgres-operator-59bb89464c-dx2rs", nil
+				} else if params[1] == "pod/postgres-operator-59bb89464c-dx2rs" {
+					return "", errInvalid
+				}
+			}
+			return "", nil
+		}
+
+		expect := false
+		expectErr := errInvalid
+		got, gotErr := k8sImpl.isPsqlOperatorRunning()
+
+		if gotErr != expectErr {
+			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
+		}
+		if got != expect {
+			t.Fatalf("Got %v, expect %v", got, expect)
 		}
 	})
 }

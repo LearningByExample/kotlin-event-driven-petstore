@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/go-git/go-git/v5"
 )
@@ -40,11 +41,40 @@ func (k k8sSetUpImpl) InstallPostgresqlOperator() error {
 		if err := k.doPsqlOperatorInstallation(); err != nil {
 			return fmt.Errorf("error installing PostgreSQL operator: %v", err)
 		}
+		k.waitPsqlOperatorRunning()
+
 	} else {
 		log.Println("PostgreSQL operator is installed ...")
 	}
 
 	return nil
+}
+
+func (k k8sSetUpImpl) waitPsqlOperatorRunning() {
+	cnt := true
+	for cnt {
+		running, err := k.isPsqlOperatorRunning()
+		cnt = !(err == nil && running)
+	}
+	log.Print("Psql operator is running")
+}
+
+func (k k8sSetUpImpl) isPsqlOperatorRunning() (running bool, err error) {
+	log.Printf("Checking if postgres operator is already running ...")
+
+	var podNames, output string
+	if podNames, err = k.kubectl("get", "pod", "-o", "name"); err == nil {
+		for _, name := range strings.Split(podNames, "\n") {
+			if strings.Contains(name, "postgres-operator") {
+				if output, err = k.kubectl("get", name, "-o", "jsonpath='{.status.phase}'"); err != nil {
+					return false, err
+				}
+				running = output == "'Running'"
+				break
+			}
+		}
+	}
+	return
 }
 
 func (k k8sSetUpImpl) isPostgreSQLOperatorInstalled() bool {
@@ -107,10 +137,10 @@ func (k k8sSetUpImpl) defaultExecuteCommand(cmdName string, params ...string) (o
 
 	err = cmd.Run()
 	output = stdBuffer.String()
+	log.Println(output)
 	if err != nil {
 		err = fmt.Errorf("error '%v' in %q %q", err, cmdName, output)
 	}
-
 	return
 }
 
