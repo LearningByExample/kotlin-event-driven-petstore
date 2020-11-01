@@ -10,12 +10,14 @@ type k8sSetUpFake struct {
 	failOnInitialize                bool
 	failOnInstallPostgresqlOperator bool
 	failOnDatabaseCreation          bool
+	failOnInstallKafkaOperator      bool
 }
 
 var (
 	errorInit            = errors.New("error on initialize")
-	errorInstallOperator = errors.New("error on installing postgresql operator")
+	errorInstallPsqlOperator = errors.New("error on installing postgresql operator")
 	errorDBCreation      = errors.New("error on database creation")
+	errorInstallKafkaOperator = errors.New("error on installing kafka operator")
 )
 
 func (k k8sSetUpFake) Initialize() error {
@@ -27,7 +29,7 @@ func (k k8sSetUpFake) Initialize() error {
 
 func (k k8sSetUpFake) InstallPostgresqlOperator() error {
 	if k.failOnInstallPostgresqlOperator {
-		return errorInstallOperator
+		return errorInstallPsqlOperator
 	}
 	return nil
 }
@@ -35,6 +37,13 @@ func (k k8sSetUpFake) InstallPostgresqlOperator() error {
 func (k k8sSetUpFake) DatabaseCreation(fileName string) error {
 	if k.failOnDatabaseCreation {
 		return errorDBCreation
+	}
+	return nil
+}
+
+func (k k8sSetUpFake) InstallKafkaOperator() error {
+	if k.failOnInstallKafkaOperator {
+		return errorInstallKafkaOperator
 	}
 	return nil
 }
@@ -64,7 +73,7 @@ func Test_run(t *testing.T) {
 			stp: k8sSetUpFake{
 				failOnInstallPostgresqlOperator: true,
 			},
-			expect: fmt.Errorf("error installing PostgreSQL operator, %v", errorInstallOperator),
+			expect: fmt.Errorf("error installing PostgreSQL operator, %v", errorInstallPsqlOperator),
 		},
 		{
 			name: "should run error when creation database fails",
@@ -72,6 +81,13 @@ func Test_run(t *testing.T) {
 				failOnDatabaseCreation: true,
 			},
 			expect: fmt.Errorf("error installing database, %v", errorDBCreation),
+		},
+		{
+			name: "should run error when install kafka operator fails",
+			stp: k8sSetUpFake{
+				failOnInstallKafkaOperator: true,
+			},
+			expect: fmt.Errorf("error installing Kafka operator, %v", errorInstallKafkaOperator),
 		},
 	}
 
