@@ -10,14 +10,16 @@ type k8sSetUpFake struct {
 	failOnInitialize                bool
 	failOnInstallPostgresqlOperator bool
 	failOnDatabaseCreation          bool
-	failOnInstallKafkaOperator      bool
+	failOnKafkaClusterCreation      bool
+	failOnCheckKudoInstallation		bool
 }
 
 var (
-	errorInit            = errors.New("error on initialize")
-	errorInstallPsqlOperator = errors.New("error on installing postgresql operator")
-	errorDBCreation      = errors.New("error on database creation")
-	errorInstallKafkaOperator = errors.New("error on installing kafka operator")
+	errorInit                 = errors.New("error on initialize")
+	errorInstallPsqlOperator  = errors.New("error on installing postgresql operator")
+	errorDBCreation           = errors.New("error on database creation")
+	errorKafkaClusterCreation = errors.New("error on kafka cluster creation")
+	errorCheckKudoInstallation = errors.New("error on kudo checking kudo installation")
 )
 
 func (k k8sSetUpFake) Initialize() error {
@@ -41,9 +43,16 @@ func (k k8sSetUpFake) DatabaseCreation(fileName string) error {
 	return nil
 }
 
-func (k k8sSetUpFake) InstallKafkaOperator() error {
-	if k.failOnInstallKafkaOperator {
-		return errorInstallKafkaOperator
+func (k k8sSetUpFake) KafkaClusterCreation(fileName string) error {
+	if k.failOnKafkaClusterCreation {
+		return errorKafkaClusterCreation
+	}
+	return nil
+}
+
+func (k k8sSetUpFake) CheckKudoInstallation() error {
+	if k.failOnCheckKudoInstallation {
+		return errorCheckKudoInstallation
 	}
 	return nil
 }
@@ -83,11 +92,18 @@ func Test_run(t *testing.T) {
 			expect: fmt.Errorf("error installing database, %v", errorDBCreation),
 		},
 		{
-			name: "should run error when install kafka operator fails",
+			name: "should run error when checking kudo installation fails",
 			stp: k8sSetUpFake{
-				failOnInstallKafkaOperator: true,
+				failOnCheckKudoInstallation: true,
 			},
-			expect: fmt.Errorf("error installing Kafka operator, %v", errorInstallKafkaOperator),
+			expect: fmt.Errorf("error checking kudo installation, %v", errorCheckKudoInstallation),
+		},
+		{
+			name: "should run error when creation kafka cluster fails",
+			stp: k8sSetUpFake{
+				failOnKafkaClusterCreation: true,
+			},
+			expect: fmt.Errorf("error installing Kafka cluster, %v", errorKafkaClusterCreation),
 		},
 	}
 

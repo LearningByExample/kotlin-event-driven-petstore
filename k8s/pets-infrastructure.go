@@ -16,8 +16,11 @@ func run(stp k8ssetup.K8sSetUp) error {
 	if err := stp.DatabaseCreation("pets-db.yml"); err != nil {
 		return fmt.Errorf("error installing database, %v", err)
 	}
-	if err := stp.InstallKafkaOperator(); err != nil {
-		return fmt.Errorf("error installing Kafka operator, %v", err)
+	if err := stp.CheckKudoInstallation(); err != nil {
+		return fmt.Errorf("error checking kudo installation, %v", err)
+	}
+	if err := stp.KafkaClusterCreation("pets"); err != nil {
+		return fmt.Errorf("error installing Kafka cluster, %v", err)
 	}
 	return nil
 }

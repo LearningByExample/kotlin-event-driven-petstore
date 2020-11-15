@@ -18,7 +18,8 @@ type K8sSetUp interface {
 	Initialize() error
 	InstallPostgresqlOperator() error
 	DatabaseCreation(fileName string) error
-	InstallKafkaOperator() error
+	CheckKudoInstallation() error
+	KafkaClusterCreation(fileName string) error
 }
 
 type k8sSetUpImpl struct {
@@ -51,20 +52,13 @@ func (k k8sSetUpImpl) InstallPostgresqlOperator() error {
 	return nil
 }
 
-func (k k8sSetUpImpl) InstallKafkaOperator() error {
-	log.Println("Installing Kafka operator ...")
+func (k k8sSetUpImpl) CheckKudoInstallation() error {
+	log.Println("Checking kudo installation ...")
 
-	if installed := k.isKafkaOperatorInstalled(); !installed {
-		log.Println("Kafka operator not installed ...")
-		if err := k.doKafkaOperatorInstallation(); err != nil {
-			return fmt.Errorf("error installing Kafka operator: %v", err)
-		}
-		k.waiKafkaOperatorRunning()
-
-	} else {
-		log.Println("Kafka operator is installed ...")
+	if _, err := k.kubectl("kudo", "version"); err != nil {
+		return fmt.Errorf("kudo is not installed: %v", err)
 	}
-
+	log.Println("Kudo is installed ...")
 	return nil
 }
 
@@ -77,16 +71,7 @@ func (k k8sSetUpImpl) waitPsqlOperatorRunning() {
 	log.Print("Psql operator is running")
 }
 
-func (k k8sSetUpImpl) waiKafkaOperatorRunning() {
-	cnt := true
-	for cnt {
-		ready, err := k.isKafkaOperatorRunning()
-		cnt = !(err == nil && ready)
-	}
-	log.Print("Kafka operator is running")
-}
-
-func (k k8sSetUpImpl) isOperatorRunning(name, namespace string) (running bool, err error) {
+func (k k8sSetUpImpl) isPodRunning(name, namespace string) (running bool, err error) {
 	log.Printf("Checking if %s operator is already running ...", name)
 
 	var podNames, output string
@@ -105,25 +90,12 @@ func (k k8sSetUpImpl) isOperatorRunning(name, namespace string) (running bool, e
 }
 
 func (k k8sSetUpImpl) isPsqlOperatorRunning() (bool, error) {
-	return k.isOperatorRunning("postgres-operator", "default")
-}
-
-func (k k8sSetUpImpl) isKafkaOperatorRunning() (bool, error) {
-	return k.isOperatorRunning("strimzi-cluster-operator", "kafka")
+	return k.isPodRunning("postgres-operator", "default")
 }
 
 func (k k8sSetUpImpl) isPostgreSQLOperatorInstalled() bool {
 	log.Println("Checking if postgresql operator is already installed ...")
 	if _, err := k.kubectl("describe", "service/postgres-operator"); err != nil {
-		return false
-	}
-
-	return true
-}
-
-func (k k8sSetUpImpl) isKafkaOperatorInstalled() bool {
-	log.Println("Checking if kafka operator is already installed ...")
-	if _, err := k.kubectl("describe", "deployment.apps/strimzi-cluster-operator", "-n", "kafka"); err != nil {
 		return false
 	}
 
@@ -164,18 +136,6 @@ func (k *k8sSetUpImpl) doPsqlOperatorInstallation() error {
 	return nil
 }
 
-func (k *k8sSetUpImpl) doKafkaOperatorInstallation() error {
-	log.Println("Installing kafka operator ...")
-	if _, err := k.kubectl("create", "namespace", "kafka"); err != nil {
-		return fmt.Errorf("error in kubectl create: %v", err)
-	}
-	if _, err := k.kubectl("apply", "-f", "https://strimzi.io/install/latest?namespace=kafka", "-n", "kafka"); err != nil {
-		return fmt.Errorf("error in kubectl apply: %v", err)
-	}
-
-	return nil
-}
-
 func (k k8sSetUpImpl) kubectl(params ...string) (output string, err error) {
 	return k.executeCommand(k.kubectlPath, params...)
 }
@@ -198,6 +158,15 @@ func (k k8sSetUpImpl) defaultExecuteCommand(cmdName string, params ...string) (o
 		err = fmt.Errorf("error '%v' in %q %q", err, cmdName, output)
 	}
 	return
+}
+
+func (k k8sSetUpImpl) isResourceCreated(rtype, name, namespace string) (bool, error) {
+	log.Printf("Checking if resource %q name %q is already created ...", rtype, name)
+	if _, err := k.kubectl("describe", rtype+"/"+name, "-n", namespace); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // NewK8sSetUp returns a K8sSetUp interface

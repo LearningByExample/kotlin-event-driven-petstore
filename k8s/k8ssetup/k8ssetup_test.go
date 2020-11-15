@@ -132,42 +132,6 @@ func Test_doPsqlOperatorInstallation(t *testing.T) {
 	})
 }
 
-func Test_doKafkaOperatorInstallation(t *testing.T) {
-	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
-
-	t.Run("install kafka operator runs ok", func(t *testing.T) {
-		k8sImpl.kubectlPath = getFilePath(okCommand)
-		var expect error = nil
-		got := k8sImpl.doKafkaOperatorInstallation()
-		if got != expect {
-			t.Fatalf("Got error %v, expect error %v", got, expect)
-		}
-	})
-
-	t.Run("install kafka operator fails when create namespace fails", func(t *testing.T) {
-		k8sImpl.kubectlPath = getFilePath(koCommand)
-		expect := "error in kubectl create"
-		got := k8sImpl.doKafkaOperatorInstallation()
-		if !strings.Contains(got.Error(), expect) {
-			t.Fatalf("Got error %v, expect error %v", got, expect)
-		}
-	})
-
-	t.Run("install kafka operator fails when create operator fails", func(t *testing.T) {
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "apply" && params[1] == "-f" {
-				return "error", errors.New("some error")
-			}
-			return "", nil
-		}
-		expect := "error in kubectl apply"
-		got := k8sImpl.doKafkaOperatorInstallation()
-		if !strings.Contains(got.Error(), expect) {
-			t.Fatalf("Got error %v, expect error %v", got, expect)
-		}
-	})
-}
-
 func Test_InstallPostgresqlOperator(t *testing.T) {
 	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
 
@@ -209,53 +173,6 @@ func Test_InstallPostgresqlOperator(t *testing.T) {
 		}
 		expect := "error installing PostgreSQL operator"
 		got := k8sImpl.InstallPostgresqlOperator()
-		if !strings.Contains(got.Error(), expect) {
-			t.Fatalf("Got error %v, expect error %v", got, expect)
-		}
-	})
-}
-
-func Test_InstallKafkOperator(t *testing.T) {
-	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
-
-	t.Run("install kafka operator runs ok", func(t *testing.T) {
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "describe" {
-				return "error", errors.New("some error")
-			}
-			if params[0] == "get" {
-				if params[1] == "pod" {
-					return "pod/strimzi-cluster-operator-59bb89464c-dx2rs", nil
-				} else if params[1] == "pod/strimzi-cluster-operator-59bb89464c-dx2rs" {
-					return "'true'", nil
-				}
-			}
-			return "", nil
-		}
-		var expect error = nil
-		got := k8sImpl.InstallKafkaOperator()
-		if got != expect {
-			t.Fatalf("Got error %v, expect error %v", got, expect)
-		}
-	})
-
-	t.Run("install kafka operator ok if its installed", func(t *testing.T) {
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			return "", nil
-		}
-		var expect error = nil
-		got := k8sImpl.InstallKafkaOperator()
-		if got != expect {
-			t.Fatalf("Got error %v, expect error %v", got, expect)
-		}
-	})
-
-	t.Run("install kafka operator runs ko when installation fails", func(t *testing.T) {
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			return "error", errors.New("some error")
-		}
-		expect := "error installing Kafka operator"
-		got := k8sImpl.InstallKafkaOperator()
 		if !strings.Contains(got.Error(), expect) {
 			t.Fatalf("Got error %v, expect error %v", got, expect)
 		}
@@ -309,61 +226,6 @@ func Test_waitPsqlOperatorRunning(t *testing.T) {
 		}
 
 		k8sImpl.waitPsqlOperatorRunning()
-		expect := 2
-		got := count
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
-		}
-	})
-}
-
-func Test_waitKafkaOperatorRunning(t *testing.T) {
-	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
-
-	t.Run("must run until kafka operator is ready", func(t *testing.T) {
-		count := 0
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "get" {
-				if params[1] == "pod" {
-					return "pod/strimzi-cluster-operator-59bb89464c-dx2rs", nil
-				} else if params[1] == "pod/strimzi-cluster-operator-59bb89464c-dx2rs" {
-					count++
-					if count == 3 {
-						return "'true'", nil
-					}
-					return "false", nil
-				}
-			}
-			return "", nil
-		}
-
-		k8sImpl.waiKafkaOperatorRunning()
-		expect := 3
-		got := count
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
-		}
-	})
-
-	t.Run("must run until there is no error and ready", func(t *testing.T) {
-		var errInvalid = errors.New("invalid")
-		count := 0
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "get" {
-				if params[1] == "pod" {
-					return "pod/strimzi-cluster-operator-59bb89464c-dx2rs", nil
-				} else if params[1] == "pod/strimzi-cluster-operator-59bb89464c-dx2rs" {
-					count++
-					if count == 2 {
-						return "'true'", nil
-					}
-					return "", errInvalid
-				}
-			}
-			return "", nil
-		}
-
-		k8sImpl.waiKafkaOperatorRunning()
 		expect := 2
 		got := count
 		if got != expect {
@@ -494,146 +356,38 @@ func Test_isPsqlOperatorRunning(t *testing.T) {
 	})
 }
 
-func Test_isKafkaOperatorRunning(t *testing.T) {
+func Test_CheckKudoInstallation(t *testing.T) {
+	var errInvalid error = errors.New("error")
 	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
 
-	t.Run("must return true if kafka operator is running", func(t *testing.T) {
+	t.Run("kudo is installed", func(t *testing.T) {
 		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "get" {
-				if params[1] == "pod" {
-					return "pod/strimzi-cluster-operator-59bb89464c-dx2rs", nil
-				} else if params[1] == "pod/strimzi-cluster-operator-59bb89464c-dx2rs" {
-					return "'true'", nil
-				}
+			if params[0] == "kudo" && params[1] == "version" {
+				return "", nil
 			}
-			return "", nil
+			return "error", errInvalid
 		}
 
-		expect := true
 		var expectErr error = nil
-		got, gotErr := k8sImpl.isKafkaOperatorRunning()
-
+		gotErr := k8sImpl.CheckKudoInstallation()
 		if gotErr != expectErr {
-			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
-		}
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
+			t.Fatalf("Got %v, expect %v", gotErr, expectErr)
 		}
 	})
 
-	t.Run("must return false if kafka operator does not exist", func(t *testing.T) {
+	t.Run("kudo is not installed", func(t *testing.T) {
 		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "get" {
-				if params[1] == "pod" {
-					return "pod/test-1234", nil
-				}
+			if params[0] == "kudo" && params[1] == "version" {
+				return "error", errInvalid
 			}
 			return "", nil
 		}
 
-		expect := false
-		var expectErr error = nil
-		got, gotErr := k8sImpl.isKafkaOperatorRunning()
-
-		if gotErr != expectErr {
-			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
-		}
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
+		expectErr := "kudo is not installed"
+		gotErr := k8sImpl.CheckKudoInstallation()
+		if !strings.Contains(gotErr.Error(), expectErr) {
+			t.Fatalf("Got %v, expect %v", gotErr, expectErr)
 		}
 	})
 
-	t.Run("must return false if kafka operator is in progress", func(t *testing.T) {
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "get" {
-				if params[1] == "pod" {
-					return "pod/strimzi-cluster-operator-59bb89464c-dx2rs", nil
-				} else if params[1] == "pod/strimzi-cluster-operator-59bb89464c-dx2rs" {
-					return "false", nil
-				}
-			}
-			return "", nil
-		}
-
-		expect := false
-		var expectErr error = nil
-		got, gotErr := k8sImpl.isKafkaOperatorRunning()
-
-		if gotErr != expectErr {
-			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
-		}
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
-		}
-	})
-
-	t.Run("must return false if get pods fails", func(t *testing.T) {
-		var errInvalid = errors.New("invalid")
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "get" {
-				if params[1] == "pod" {
-					return "", errInvalid
-				}
-			}
-			return "", nil
-		}
-
-		expect := false
-		expectErr := errInvalid
-		got, gotErr := k8sImpl.isKafkaOperatorRunning()
-
-		if gotErr != expectErr {
-			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
-		}
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
-		}
-	})
-
-	t.Run("must return false if kafka operator ready check fails", func(t *testing.T) {
-		var errInvalid = errors.New("invalid")
-		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
-			if params[0] == "get" {
-				if params[1] == "pod" {
-					return "pod/strimzi-cluster-operator-59bb89464c-dx2rs", nil
-				} else if params[1] == "pod/strimzi-cluster-operator-59bb89464c-dx2rs" {
-					return "", errInvalid
-				}
-			}
-			return "", nil
-		}
-
-		expect := false
-		expectErr := errInvalid
-		got, gotErr := k8sImpl.isKafkaOperatorRunning()
-
-		if gotErr != expectErr {
-			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
-		}
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
-		}
-	})
-}
-
-func Test_isKafkaOperatorInstalled(t *testing.T) {
-	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
-
-	t.Run("kafka operator is installed", func(t *testing.T) {
-		expect := true
-		k8sImpl.kubectlPath = getFilePath(okCommand)
-		got := k8sImpl.isKafkaOperatorInstalled()
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
-		}
-	})
-
-	t.Run("kafka operator is not installed", func(t *testing.T) {
-		expect := false
-		k8sImpl.kubectlPath = getFilePath(koCommand)
-		got := k8sImpl.isKafkaOperatorInstalled()
-		if got != expect {
-			t.Fatalf("Got %v, expect %v", got, expect)
-		}
-	})
 }

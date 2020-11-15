@@ -7,13 +7,14 @@ import (
 	"testing"
 )
 
+
 func Test_getClusterName(t *testing.T) {
 	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
 
 	t.Run("must return the cluster name", func(t *testing.T) {
 		expect := "cluster"
 		var expectErr error = nil
-		got, gotErr := k8sImpl.getClusterName(getFilePath("cluster.yml"))
+		got, gotErr := k8sImpl.getClusterName(getFilePath("psql-cluster.yml"))
 
 		if gotErr != expectErr {
 			t.Fatalf("Got error %v, expect error %v", gotErr, expectErr)
@@ -102,7 +103,7 @@ func Test_isDatabaseCreated(t *testing.T) {
 func Test_createDatabase(t *testing.T) {
 	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
 
-	t.Run("must return true if database is created", func(t *testing.T) {
+	t.Run("must return no error if database is created", func(t *testing.T) {
 		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
 			return "", nil
 		}
@@ -115,7 +116,7 @@ func Test_createDatabase(t *testing.T) {
 		}
 	})
 
-	t.Run("must return false if database is not created", func(t *testing.T) {
+	t.Run("must return error if database is not created", func(t *testing.T) {
 		var errInvalid = errors.New("invalid")
 		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
 			return "", errInvalid
@@ -130,7 +131,6 @@ func Test_createDatabase(t *testing.T) {
 	})
 }
 
-// map[PostgresClusterStatus:Running]
 func Test_isDatabaseRunning(t *testing.T) {
 	k8sImpl := NewK8sSetUp().(*k8sSetUpImpl)
 
@@ -138,7 +138,6 @@ func Test_isDatabaseRunning(t *testing.T) {
 		k8sImpl.executeCommand = func(cmdName string, params ...string) (string, error) {
 			return "map[PostgresClusterStatus:Running]", nil
 		}
-
 		expect := true
 		var expectErr error = nil
 		got, gotErr := k8sImpl.isDatabaseRunning("cluster")
@@ -243,7 +242,7 @@ func Test_DatabaseCreation(t *testing.T) {
 		}
 
 		var expect error = nil
-		got := k8sImpl.DatabaseCreation("cluster.yml")
+		got := k8sImpl.DatabaseCreation("psql-cluster.yml")
 		if got != expect {
 			t.Fatalf("Got error %v, expect  error %v", got, expect)
 		}
@@ -267,7 +266,7 @@ func Test_DatabaseCreation(t *testing.T) {
 		}
 
 		expect := "already exists"
-		got := k8sImpl.DatabaseCreation("cluster.yml")
+		got := k8sImpl.DatabaseCreation("psql-cluster.yml")
 		if !strings.Contains(got.Error(), expect) {
 			t.Fatalf("Got error %v, expect  error %v", got, expect)
 		}
@@ -278,14 +277,14 @@ func Test_DatabaseCreation(t *testing.T) {
 			if params[0] == "describe" && params[1] == "postgresql/cluster" {
 				return "error", errors.New("error kubectl describe")
 			}
-			if params[0] == "create" && params[1] == "-f" && params[2] == "cluster.yml" {
+			if params[0] == "create" && params[1] == "-f" && params[2] == "psql-cluster.yml" {
 				return "error", errors.New("error kubectl create")
 			}
 			return "map[PostgresClusterStatus:Running]", nil
 		}
 
 		expect := "error creating database cluster"
-		got := k8sImpl.DatabaseCreation("cluster.yml")
+		got := k8sImpl.DatabaseCreation("psql-cluster.yml")
 		if !strings.Contains(got.Error(), expect) {
 			t.Fatalf("Got error %v, expect  error %v", got, expect)
 		}
@@ -303,7 +302,7 @@ func Test_DatabaseCreation(t *testing.T) {
 		}
 
 		expect := "error creating job for cluster"
-		got := k8sImpl.DatabaseCreation("cluster.yml")
+		got := k8sImpl.DatabaseCreation("psql-cluster.yml")
 		if !strings.Contains(got.Error(), expect) {
 			t.Fatalf("Got error %v, expect  error %v", got, expect)
 		}

@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"regexp"
+	"strings"
 
-	"gopkg.in/yaml.v3"
+	"gopkg.in/yaml.v2"
 )
 
 // DatabaseYml is used to read a yml file in order to get the cluster name
@@ -20,12 +20,7 @@ type DatabaseYml struct {
 }
 
 func (k k8sSetUpImpl) isDatabaseCreated(cluster string) (bool, error) {
-	log.Printf("Checking if database cluster %q is already created ...", cluster)
-	if _, err := k.kubectl("describe", "postgresql/"+cluster); err != nil {
-		return false, err
-	}
-
-	return true, nil
+	return k.isResourceCreated("postgresql", cluster, "default")
 }
 
 func (k k8sSetUpImpl) createDatabase(fileName string) error {
@@ -57,18 +52,11 @@ func (k k8sSetUpImpl) getClusterName(fileName string) (clusterName string, err e
 func (k k8sSetUpImpl) isDatabaseRunning(cluster string) (bool, error) {
 	log.Printf("Checking if database cluster %q is already running ...", cluster)
 	output, err := k.kubectl("get", "postgresql/"+cluster, "-o", "jsonpath={.status}")
-	status := ""
 	if err != nil {
 		return false, err
 	}
 
-	var re = regexp.MustCompile(`(?m).*:(.*)]`)
-	match := re.FindStringSubmatch(output)
-	if len(match) > 1 {
-		status = match[1]
-	}
-
-	return status == "Running", nil
+	return strings.Contains(output, "Running"), nil
 }
 
 func (k k8sSetUpImpl) waitDatabaseCreation(cluster string) {
